@@ -10,10 +10,13 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { BoardHighlights } from "../../meshes/BoardHighlights/BoardHighlights";
 import Pieces from "../../meshes/Pieces";
 import Board from "../Board/Board";
+import { ColorPicker } from "../ColorPicker/ColorPicker";
 import { DragHandler } from "../DragHandler/DragHandler";
 import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
 
 export default function Scene() {
+  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+
   const [squareToNode, setSquareToNode] = useState<Record<string, string>>(() =>
     Object.fromEntries(PIECE_DEFINITIONS.map((p) => [p.square, p.nodeName])),
   );
@@ -58,6 +61,11 @@ export default function Scene() {
   console.log(legalMoves);
 
   const onPieceSelect = (nodeName: string) => {
+    const pieceColor = PIECE_DEFINITIONS.find(
+      (p) => p.nodeName === nodeName,
+    )?.color;
+    const turnColor = pieceColor === "white" ? "w" : "b";
+    if (turnColor !== chess.current.turn() || turnColor !== playerColor) return;
     const fromSquare = Object.entries(squareToNode).find(
       ([, node]) => node === nodeName,
     )?.[0];
@@ -103,7 +111,12 @@ export default function Scene() {
   };
 
   const onDragMove = (position: [number, number, number]) => {
-    const local: [number, number, number] = [position[0], -position[2], 0];
+    const flip = playerColor === "b" ? -1 : 1;
+    const local: [number, number, number] = [
+      position[0] * flip,
+      -position[2] * flip,
+      0,
+    ];
     dragPositionRef.current = local;
     setDragPosition(local);
   };
@@ -145,6 +158,28 @@ export default function Scene() {
           if (movement.isCapture() && !movement.isEnPassant()) {
             delete next[toSquare];
           }
+          if (movement.isKingsideCastle()) {
+            if (movement.color === "w") {
+              const newRookPos = prev["h1"];
+              delete next["h1"];
+              next["f1"] = newRookPos;
+            } else {
+              const newRookPos = prev["h8"];
+              delete next["h8"];
+              next["f8"] = newRookPos;
+            }
+          }
+          if (movement.isQueensideCastle()) {
+            if (movement.color === "w") {
+              const newRookPos = prev["a1"];
+              delete next["a1"];
+              next["d1"] = newRookPos;
+            } else {
+              const newRookPos = prev["a8"];
+              delete next["a8"];
+              next["d8"] = newRookPos;
+            }
+          }
           next[toSquare] = nodeName;
           return next;
         });
@@ -160,6 +195,8 @@ export default function Scene() {
     setSelectedNodeName(null);
     setLegalMoves([]);
   };
+  if (!playerColor) return <ColorPicker onSelect={setPlayerColor} />;
+
   return (
     <Canvas
       style={{ height: "100dvh", width: "100dvw" }}
@@ -167,7 +204,7 @@ export default function Scene() {
     >
       <GlobalLight />
       <Suspense fallback={<LoadingFallback />}>
-        <group rotation={[-Math.PI / 2, 0, 0]}>
+        <group rotation={[-Math.PI / 2, 0, playerColor === "b" ? Math.PI : 0]}>
           <Board />
           <Pieces
             dragPosition={dragPosition}
