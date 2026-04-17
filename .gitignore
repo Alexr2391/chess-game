@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# large model files - keep only chess-optimized-board.glb
+public/models/chess/chess.glb
+public/models/chess/chess-board.glb
+public/models/chess/chess-resized.glb
+src/chess_set.glb
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
