@@ -1,0 +1,7 @@
+@use "@/styles/index" as *;
+
+.container {
+  height: 100dvh;
+  width: 100dvw;
+  background: $background;
+}
