@@ -1,9 +1,11 @@
 "use client";
 
+import type { CapturedState } from "@/types";
 import { PIECE_FIT, SQUARE_SIZE } from "@/utils/boardConstants";
 import { calculatePiecePos } from "@/utils/calculatePiecePos";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { CapturedChessPiece } from "./CapturedChessPiece/CapturedChessPiece";
 import ChessPiece from "./ChessPiece/ChessPiece";
 import { PIECE_DEFINITIONS } from "./constants";
 
@@ -13,6 +15,7 @@ type PiecesProps = {
   pieceSquares: Record<string, string>;
   onPieceSelect: (nodeName: string) => void;
   selectedPiece: string | null;
+  capturedPieces: CapturedState;
   onPieceCancelSelection: () => void;
 };
 
@@ -21,6 +24,7 @@ export default function Pieces({
   selectedPiece,
   dragPosition,
   selectedNodeName,
+  capturedPieces,
   onPieceSelect,
   onPieceCancelSelection,
 }: PiecesProps) {
@@ -31,9 +35,53 @@ export default function Pieces({
   const pawnBox = pawnMesh.geometry.boundingBox!;
   const pawnWidth = pawnBox.max.x - pawnBox.min.x;
   const baseScale = (SQUARE_SIZE * PIECE_FIT) / pawnWidth;
-
+  const { black, white } = capturedPieces;
   return (
     <group>
+      {black.map(({ nodeName, slot }) => {
+        const mesh = nodes[nodeName] as THREE.Mesh;
+        const scale =
+          baseScale *
+          PIECE_DEFINITIONS.find((piece) => piece.nodeName === nodeName)!
+            .scaleFactor;
+        const elevation = scale;
+
+        return (
+          <CapturedChessPiece
+            key={nodeName}
+            geometry={mesh.geometry}
+            material={mesh.material}
+            position={[
+              -2,
+              slot * SQUARE_SIZE - (1 - SQUARE_SIZE / 2),
+              elevation - 0.01,
+            ]}
+            scale={scale}
+          />
+        );
+      })}
+      {white.map(({ nodeName, slot }) => {
+        const mesh = nodes[nodeName] as THREE.Mesh;
+        const scale =
+          baseScale *
+          PIECE_DEFINITIONS.find((piece) => piece.nodeName === nodeName)!
+            .scaleFactor;
+        const elevation = scale;
+
+        return (
+          <CapturedChessPiece
+            key={nodeName}
+            geometry={mesh.geometry}
+            material={mesh.material}
+            position={[
+              2,
+              slot * SQUARE_SIZE - (1 - SQUARE_SIZE / 2),
+              elevation - 0.01,
+            ]}
+            scale={scale}
+          />
+        );
+      })}
       {PIECE_DEFINITIONS.map((piece) => {
         const mesh = nodes[piece.nodeName] as THREE.Mesh;
         if (!mesh?.geometry) return null;

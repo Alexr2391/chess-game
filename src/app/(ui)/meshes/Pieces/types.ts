@@ -9,20 +9,23 @@ export type PieceType =
   | "king";
 export type PieceColor = "white" | "black";
 
-export type ChessPieceProps = {
-  type: PieceType;
-  color: PieceColor;
+export interface Piece {
   geometry: THREE.BufferGeometry;
   material: THREE.Material | THREE.Material[];
   position: [number, number, number];
+  scale?: number;
   square?: string;
+}
+
+export interface ChessPieceProps extends Piece {
+  type: PieceType;
+  color: PieceColor;
   isSelected?: boolean;
   isCapture?: boolean;
   isDragging?: boolean;
-  scale?: number;
   onSelect?: () => void;
   onDeselect?: () => void;
-};
+}
 
 export type PieceDefinition = {
   nodeName: string;
