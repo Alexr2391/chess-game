@@ -52,9 +52,9 @@ export default function Pieces({
             geometry={mesh.geometry}
             material={mesh.material}
             position={[
-              -2,
+              -1.5,
               slot * SQUARE_SIZE - (1 - SQUARE_SIZE / 2),
-              elevation - 0.01,
+              elevation - 0.04,
             ]}
             scale={scale}
           />
@@ -74,9 +74,9 @@ export default function Pieces({
             geometry={mesh.geometry}
             material={mesh.material}
             position={[
-              2,
+              1.5,
               slot * SQUARE_SIZE - (1 - SQUARE_SIZE / 2),
-              elevation - 0.01,
+              elevation - 0.04,
             ]}
             scale={scale}
           />

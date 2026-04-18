@@ -1,30 +1,41 @@
 "use client";
 import GlobalLight from "@/app/(ui)/lights/GlobalLight/GlobalLight";
 import { PIECE_DEFINITIONS } from "@/app/(ui)/meshes/Pieces/constants";
-import type { CapturedPiece, CapturedState } from "@/types";
+import type {
+  CapturedPiece,
+  CapturedState,
+  ColorChecked,
+  GameStatus,
+} from "@/types";
 import { positionToSquare } from "@/utils/positionToSquare";
 import {
   createStockfishWorker,
   getBestMove,
   getEval,
 } from "@/utils/stockfishWorker";
-import { OrbitControls } from "@react-three/drei";
+import { Environment, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Chess, Move, Square } from "chess.js";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { BoardHighlights } from "../../meshes/BoardHighlights/BoardHighlights";
 import Pieces from "../../meshes/Pieces";
+import ChessTable from "../../meshes/Table/Table";
 import Board from "../Board/Board";
+import { CameraIntro } from "../CameraIntro/CameraIntro";
 import { ColorPicker } from "../ColorPicker/ColorPicker";
 import { DragHandler } from "../DragHandler/DragHandler";
 import { EvalScore } from "../EvalScore/EvalScore";
+import { GameModal } from "../GameModal/GameModal";
 import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
 import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
 
 export default function Scene() {
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [introComplete, setIntroComplete] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [evalScore, setEvalScore] = useState(0);
+  const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
+  const [checkedColor, setCheckedColor] = useState<ColorChecked>(null);
 
   const [squareToNode, setSquareToNode] = useState<Record<string, string>>(() =>
     Object.fromEntries(PIECE_DEFINITIONS.map((p) => [p.square, p.nodeName])),
@@ -40,6 +51,23 @@ export default function Scene() {
   const [dragPosition, setDragPosition] = useState<
     [number, number, number] | null
   >(null);
+
+  const updateGameStatus = () => {
+    const activeColor = chess.current.turn();
+    const isChecked = chess.current.isCheck();
+    if (chess.current.isCheckmate()) {
+      setGameStatus("checkmate");
+      setCheckedColor(activeColor === "b" ? "black" : "white");
+    } else if (chess.current.isDraw() || chess.current.isStalemate()) {
+      setGameStatus("draw");
+    } else if (isChecked) {
+      setGameStatus("check");
+      setCheckedColor(activeColor === "b" ? "black" : "white");
+    } else {
+      setGameStatus("playing");
+      setCheckedColor(null);
+    }
+  };
 
   const chess = useRef(new Chess());
   const dragPositionRef = useRef<[number, number, number] | null>(null);
@@ -100,6 +128,7 @@ export default function Scene() {
       if (enPassantCapture) delete next[enPassantCapture];
       if (movement.isCapture() && !movement.isEnPassant()) delete next[to];
       if (movement.isKingsideCastle()) {
+        //Hardcoded tile standard positions for Kingside/ Queenside rook
         if (movement.color === "w") {
           const r = prev["h1"];
           delete next["h1"];
@@ -136,8 +165,27 @@ export default function Scene() {
       const from = move.slice(0, 2) as Square;
       const to = move.slice(2, 4) as Square;
       applyMove(from, to);
+      updateGameStatus();
       setIsThinking(false);
     });
+  };
+
+  const onPlayAgain = () => {
+    setGameStatus("playing");
+    setCapturedPieces({ black: [], white: [] });
+    setSquareToNode(
+      Object.fromEntries(PIECE_DEFINITIONS.map((p) => [p.square, p.nodeName])),
+    );
+    setSelectedNodeName(null);
+    setCheckedColor(null);
+    setPlayerColor(null);
+    setIntroComplete(false);
+    setEvalScore(0);
+    chess.current = new Chess();
+    dragPositionRef.current = null;
+    legalMovesRef.current = [];
+
+    dragFromSquareRef.current = null;
   };
 
   useEffect(() => {
@@ -150,11 +198,11 @@ export default function Scene() {
   }, []);
 
   useEffect(() => {
-    if (!playerColor) return;
+    if (!introComplete || !playerColor) return;
     if (chess.current.turn() !== playerColor) {
       triggerStockFish();
     }
-  }, [playerColor]);
+  }, [introComplete]);
 
   useEffect(() => {
     console.log("chess graph", chess.current?.ascii());
@@ -180,6 +228,12 @@ export default function Scene() {
   console.log(legalMoves);
 
   const onPieceSelect = (nodeName: string) => {
+    if (
+      gameStatus === "checkmate" ||
+      gameStatus === "draw" ||
+      gameStatus === "stalemate"
+    )
+      return;
     const pieceColor = PIECE_DEFINITIONS.find(
       (p) => p.nodeName === nodeName,
     )?.color;
@@ -217,6 +271,7 @@ export default function Scene() {
       const fromSquare = dragFromSquareRef.current;
       if (isLegal && fromSquare) {
         applyMove(fromSquare as Square, toSquare as Square);
+        updateGameStatus();
         getEval(evalWorkerRef.current!, chess.current.fen(), 8).then(
           (score) => {
             setEvalScore(playerColor === "w" ? -score : score);
@@ -225,7 +280,7 @@ export default function Scene() {
         triggerStockFish();
       }
     }
-
+    updateGameStatus();
     dragPositionRef.current = null;
     legalMovesRef.current = [];
 
@@ -241,15 +296,27 @@ export default function Scene() {
     <>
       {isThinking && <ThinkingOverlay />}
       <EvalScore score={evalScore} />
+      <GameModal
+        checkedColor={checkedColor}
+        gameStatus={gameStatus}
+        onClose={() => null}
+        onPlayAgain={onPlayAgain}
+      />
       <Canvas
         style={{ height: "100dvh", width: "100dvw" }}
         onPointerUp={() => onDragEnd()}
       >
         <GlobalLight />
+        <Environment preset="studio" environmentIntensity={0.4} />
+        <CameraIntro
+          playerColor={playerColor!}
+          onComplete={() => setIntroComplete(true)}
+        />
         <Suspense fallback={<LoadingFallback />}>
           <group
             rotation={[-Math.PI / 2, 0, playerColor === "b" ? Math.PI : 0]}
           >
+            <ChessTable />
             <Board />
             <Pieces
               dragPosition={dragPosition}
@@ -264,7 +331,7 @@ export default function Scene() {
             <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
           </group>
         </Suspense>
-        <OrbitControls enabled={!isDragging} />
+        <OrbitControls enabled={introComplete && !isDragging} />
       </Canvas>
     </>
   );
