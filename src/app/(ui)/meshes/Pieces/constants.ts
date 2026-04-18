@@ -1,5 +1,16 @@
 import type { PieceDefinition } from "./types";
 
+export const PROMO_DEFINITIONS: PieceDefinition[] = [
+  { nodeName: "prom_w_q", type: "queen", color: "white", square: null, scaleFactor: 1.6, glbNodeOverride: "queen001_White_Material003_0" },
+  { nodeName: "prom_w_r", type: "rook",  color: "white", square: null, scaleFactor: 1.1, glbNodeOverride: "Rook002_White_Material003_0" },
+  { nodeName: "prom_w_b", type: "bishop",color: "white", square: null, scaleFactor: 1.3, glbNodeOverride: "Bishop001_White_Material003_0" },
+  { nodeName: "prom_w_n", type: "knight",color: "white", square: null, scaleFactor: 1.1, glbNodeOverride: "Knight_White_Material003_0" },
+  { nodeName: "prom_b_q", type: "queen", color: "black", square: null, scaleFactor: 1.6, glbNodeOverride: "queen002_Black_Material001_0" },
+  { nodeName: "prom_b_r", type: "rook",  color: "black", square: null, scaleFactor: 1.1, glbNodeOverride: "Rook001_Black_Material001_0" },
+  { nodeName: "prom_b_b", type: "bishop",color: "black", square: null, scaleFactor: 1.3, glbNodeOverride: "Bishop003_Black_Material001_0" },
+  { nodeName: "prom_b_n", type: "knight",color: "black", square: null, scaleFactor: 1.1, glbNodeOverride: "Knight002_Black_Material001_0" },
+];
+
 export const PIECE_DEFINITIONS: PieceDefinition[] = [
   {
     nodeName: "Pawn001_White_Material003_0",

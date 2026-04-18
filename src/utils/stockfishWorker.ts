@@ -30,6 +30,7 @@ export function getBestMove(
   fen: string,
   depth: number = 12,
   onScore?: (score: number) => void,
+  skillLevel: number = 20,
 ): Promise<string> {
   return new Promise((resolve) => {
     const onMessage = (e: MessageEvent) => {
@@ -49,6 +50,7 @@ export function getBestMove(
       }
     };
     worker.addEventListener("message", onMessage);
+    worker.postMessage(`setoption name Skill Level value ${skillLevel}`);
     worker.postMessage("position fen " + fen);
     worker.postMessage("go depth " + depth);
   });
