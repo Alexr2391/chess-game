@@ -3,6 +3,11 @@ import GlobalLight from "@/app/(ui)/lights/GlobalLight/GlobalLight";
 import { PIECE_DEFINITIONS } from "@/app/(ui)/meshes/Pieces/constants";
 import type { CapturedPiece, CapturedState } from "@/types";
 import { positionToSquare } from "@/utils/positionToSquare";
+import {
+  createStockfishWorker,
+  getBestMove,
+  getEval,
+} from "@/utils/stockfishWorker";
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Chess, Move, Square } from "chess.js";
@@ -10,10 +15,17 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { BoardHighlights } from "../../meshes/BoardHighlights/BoardHighlights";
 import Pieces from "../../meshes/Pieces";
 import Board from "../Board/Board";
+import { ColorPicker } from "../ColorPicker/ColorPicker";
 import { DragHandler } from "../DragHandler/DragHandler";
+import { EvalScore } from "../EvalScore/EvalScore";
 import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
+import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
 
 export default function Scene() {
+  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
+  const [evalScore, setEvalScore] = useState(0);
+
   const [squareToNode, setSquareToNode] = useState<Record<string, string>>(() =>
     Object.fromEntries(PIECE_DEFINITIONS.map((p) => [p.square, p.nodeName])),
   );
@@ -33,44 +45,8 @@ export default function Scene() {
   const dragPositionRef = useRef<[number, number, number] | null>(null);
   const legalMovesRef = useRef<Move[]>([]);
   const dragFromSquareRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    console.log("chess graph", chess.current?.ascii());
-  }, [squareToNode]);
-
-  useEffect(() => {
-    console.log("captured Array", capturedPieces);
-  }, [capturedPieces]);
-
-  useEffect(() => {
-    if (!selectedNodeName) return;
-    const currentSquare = Object.entries(squareToNode).find(
-      ([, nodeName]) => nodeName === selectedNodeName,
-    )?.[0];
-    const legalMoves = chess.current.moves({
-      square: currentSquare as Square,
-      verbose: true,
-    });
-    setLegalMoves(legalMoves);
-    legalMovesRef.current = legalMoves;
-  }, [selectedNodeName, squareToNode]);
-
-  console.log(legalMoves);
-
-  const onPieceSelect = (nodeName: string) => {
-    const fromSquare = Object.entries(squareToNode).find(
-      ([, node]) => node === nodeName,
-    )?.[0];
-    setSelectedNodeName(nodeName);
-    dragFromSquareRef.current = fromSquare ?? null;
-    setIsDragging(true);
-  };
-  const onDeselect = () => {
-    setSelectedNodeName(null);
-    setLegalMoves([]);
-    dragFromSquareRef.current = null;
-    setIsDragging(false);
-  };
+  const stockfishRef = useRef<Worker | null>(null);
+  const evalWorkerRef = useRef<Worker | null>(null);
 
   const addToCapturedList = (nodeName: string) => {
     const capturedPiece = PIECE_DEFINITIONS.find(
@@ -102,52 +78,151 @@ export default function Scene() {
     });
   };
 
+  const applyMove = (from: Square, to: Square) => {
+    const movement = chess.current.move({ from, to });
+    let enPassantCapture: string | null = null;
+
+    if (movement.isEnPassant()) {
+      enPassantCapture = `${movement.to[0]}${movement.from[1]}`;
+    }
+
+    setSquareToNode((prev) => {
+      if (enPassantCapture && prev[enPassantCapture]) {
+        addToCapturedList(prev[enPassantCapture]);
+      }
+      if (movement.isCapture() && !movement.isEnPassant() && prev[to]) {
+        addToCapturedList(prev[to]);
+      }
+
+      const next = { ...prev };
+      const nodeName = prev[from];
+      delete next[from];
+      if (enPassantCapture) delete next[enPassantCapture];
+      if (movement.isCapture() && !movement.isEnPassant()) delete next[to];
+      if (movement.isKingsideCastle()) {
+        if (movement.color === "w") {
+          const r = prev["h1"];
+          delete next["h1"];
+          next["f1"] = r;
+        } else {
+          const r = prev["h8"];
+          delete next["h8"];
+          next["f8"] = r;
+        }
+      }
+      if (movement.isQueensideCastle()) {
+        if (movement.color === "w") {
+          const r = prev["a1"];
+          delete next["a1"];
+          next["d1"] = r;
+        } else {
+          const r = prev["a8"];
+          delete next["a8"];
+          next["d8"] = r;
+        }
+      }
+      next[to] = nodeName;
+      return next;
+    });
+  };
+
+  const triggerStockFish = () => {
+    setIsThinking(true);
+    const fen = chess.current.fen();
+    console.log("current fen", chess.current.fen());
+    getBestMove(stockfishRef.current!, fen, 12, (score) =>
+      setEvalScore(playerColor === "w" ? -score : score),
+    ).then((move) => {
+      const from = move.slice(0, 2) as Square;
+      const to = move.slice(2, 4) as Square;
+      applyMove(from, to);
+      setIsThinking(false);
+    });
+  };
+
+  useEffect(() => {
+    stockfishRef.current = createStockfishWorker();
+    evalWorkerRef.current = createStockfishWorker();
+    return () => {
+      stockfishRef.current?.terminate();
+      evalWorkerRef.current?.terminate();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!playerColor) return;
+    if (chess.current.turn() !== playerColor) {
+      triggerStockFish();
+    }
+  }, [playerColor]);
+
+  useEffect(() => {
+    console.log("chess graph", chess.current?.ascii());
+  }, [squareToNode]);
+
+  useEffect(() => {
+    console.log("captured Array", capturedPieces);
+  }, [capturedPieces]);
+
+  useEffect(() => {
+    if (!selectedNodeName) return;
+    const currentSquare = Object.entries(squareToNode).find(
+      ([, nodeName]) => nodeName === selectedNodeName,
+    )?.[0];
+    const legalMoves = chess.current.moves({
+      square: currentSquare as Square,
+      verbose: true,
+    });
+    setLegalMoves(legalMoves);
+    legalMovesRef.current = legalMoves;
+  }, [selectedNodeName, squareToNode]);
+
+  console.log(legalMoves);
+
+  const onPieceSelect = (nodeName: string) => {
+    const pieceColor = PIECE_DEFINITIONS.find(
+      (p) => p.nodeName === nodeName,
+    )?.color;
+    const turnColor = pieceColor === "white" ? "w" : "b";
+    if (turnColor !== chess.current.turn() || turnColor !== playerColor) return;
+    const fromSquare = Object.entries(squareToNode).find(
+      ([, node]) => node === nodeName,
+    )?.[0];
+    setSelectedNodeName(nodeName);
+    dragFromSquareRef.current = fromSquare ?? null;
+    setIsDragging(true);
+  };
+  const onDeselect = () => {
+    setSelectedNodeName(null);
+    setLegalMoves([]);
+    dragFromSquareRef.current = null;
+    setIsDragging(false);
+  };
+
   const onDragMove = (position: [number, number, number]) => {
-    const local: [number, number, number] = [position[0], -position[2], 0];
+    const flip = playerColor === "b" ? -1 : 1;
+    const local: [number, number, number] = [
+      position[0] * flip,
+      -position[2] * flip,
+      0,
+    ];
     dragPositionRef.current = local;
     setDragPosition(local);
   };
   const onDragEnd = () => {
     const pos = dragPositionRef.current;
-    let enPassantCapture: string | null;
     if (pos) {
       const toSquare = positionToSquare(pos);
       const isLegal = legalMovesRef.current.some((m) => m.to === toSquare);
       const fromSquare = dragFromSquareRef.current;
       if (isLegal && fromSquare) {
-        const movement = chess.current.move({
-          from: fromSquare as Square,
-          to: toSquare as Square,
-        });
-
-        if (movement.isEnPassant()) {
-          const prevNum = movement.from[1];
-          const newTile = movement.to[0];
-
-          enPassantCapture = `${newTile}${prevNum}`;
-          if (enPassantCapture) {
-            addToCapturedList(squareToNode[enPassantCapture]);
-          }
-        }
-        if (movement.isCapture() && !movement.isEnPassant()) {
-          addToCapturedList(squareToNode[toSquare]);
-        }
-
-        setSquareToNode((prev) => {
-          const next = { ...prev };
-
-          const nodeName = prev[fromSquare];
-
-          delete next[fromSquare];
-          if (enPassantCapture) {
-            delete next[enPassantCapture];
-          }
-          if (movement.isCapture() && !movement.isEnPassant()) {
-            delete next[toSquare];
-          }
-          next[toSquare] = nodeName;
-          return next;
-        });
+        applyMove(fromSquare as Square, toSquare as Square);
+        getEval(evalWorkerRef.current!, chess.current.fen(), 8).then(
+          (score) => {
+            setEvalScore(playerColor === "w" ? -score : score);
+          },
+        );
+        triggerStockFish();
       }
     }
 
@@ -160,29 +235,37 @@ export default function Scene() {
     setSelectedNodeName(null);
     setLegalMoves([]);
   };
+  if (!playerColor) return <ColorPicker onSelect={setPlayerColor} />;
+
   return (
-    <Canvas
-      style={{ height: "100dvh", width: "100dvw" }}
-      onPointerUp={() => onDragEnd()}
-    >
-      <GlobalLight />
-      <Suspense fallback={<LoadingFallback />}>
-        <group rotation={[-Math.PI / 2, 0, 0]}>
-          <Board />
-          <Pieces
-            dragPosition={dragPosition}
-            selectedNodeName={selectedNodeName}
-            pieceSquares={squareToNode}
-            capturedPieces={capturedPieces}
-            onPieceSelect={onPieceSelect}
-            onPieceCancelSelection={onDeselect}
-            selectedPiece={selectedNodeName}
-          />
-          <BoardHighlights legalMoves={legalMoves} />
-          <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
-        </group>
-      </Suspense>
-      <OrbitControls enabled={!isDragging} />
-    </Canvas>
+    <>
+      {isThinking && <ThinkingOverlay />}
+      <EvalScore score={evalScore} />
+      <Canvas
+        style={{ height: "100dvh", width: "100dvw" }}
+        onPointerUp={() => onDragEnd()}
+      >
+        <GlobalLight />
+        <Suspense fallback={<LoadingFallback />}>
+          <group
+            rotation={[-Math.PI / 2, 0, playerColor === "b" ? Math.PI : 0]}
+          >
+            <Board />
+            <Pieces
+              dragPosition={dragPosition}
+              selectedNodeName={selectedNodeName}
+              pieceSquares={squareToNode}
+              capturedPieces={capturedPieces}
+              onPieceSelect={onPieceSelect}
+              onPieceCancelSelection={onDeselect}
+              selectedPiece={selectedNodeName}
+            />
+            <BoardHighlights legalMoves={legalMoves} />
+            <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
+          </group>
+        </Suspense>
+        <OrbitControls enabled={!isDragging} />
+      </Canvas>
+    </>
   );
 }

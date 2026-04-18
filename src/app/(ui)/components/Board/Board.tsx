@@ -12,10 +12,18 @@ export default function Board() {
   return (
     <group>
       {base?.geometry && (
-        <mesh geometry={base.geometry} material={base.material} />
+        <mesh
+          geometry={base.geometry}
+          material={base.material}
+          rotation-z={Math.PI / 2}
+        />
       )}
       {emission?.geometry && (
-        <mesh geometry={emission.geometry} material={emission.material} />
+        <mesh
+          geometry={emission.geometry}
+          material={emission.material}
+          rotation-z={Math.PI / 2}
+        />
       )}
     </group>
   );
