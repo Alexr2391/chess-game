@@ -3,23 +3,71 @@
 .container {
   position: fixed;
   inset: 0;
+  user-select: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: $background;
-  gap: 2rem;
+  justify-content: flex-end;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("/images/empire_chess.png") top / cover no-repeat;
+    opacity: 1;
+    z-index: 0;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: $background;
+    opacity: 0;
+    z-index: 0;
+  }
 }
 
-.title {
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 600;
+.logo {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  z-index: 1;
+  width: 200px;
+  height: auto;
+}
+
+.splashMenu {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5rem;
+  padding-bottom: calc(2.5rem + 100px);
+  width: 700px;
+  height: 590px;
+  margin-bottom: 100px;
+  background: url("/images/splashmenu.webp") center / cover no-repeat;
+  border-radius: 12px;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.8));
+}
+
+.titleImage {
+  position: relative;
+  z-index: 1;
+  width: 300px;
+  height: 90px;
+  background: url("/images/pick_a_side.webp") center / cover no-repeat;
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.9)) brightness(1.6);
 }
 
 .buttons {
   display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
 .btn {
@@ -32,12 +80,74 @@
 }
 
 .white {
-  background: #fff;
-  color: #000;
+  position: relative;
+  width: 300px;
+  height: 70px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  overflow: hidden;
+
+  &:hover .btnImage {
+    filter: brightness(1.2);
+  }
 }
 
 .black {
-  background: #1a1a1a;
-  color: #fff;
-  border: 2px solid #444;
+  position: relative;
+  width: 300px;
+  height: 70px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  overflow: hidden;
+
+  &:hover .btnImage {
+    filter: brightness(1.3);
+  }
+}
+
+.btnImage {
+  object-fit: cover;
+  object-position: center;
+  transition: filter 0.2s ease;
+}
+
+@media (min-width: 1921px) {
+  .container::before {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1920px;
+  }
+
+  .logo {
+    left: calc(50% - 960px + 30px);
+  }
+}
+
+@media (max-width: 700px) {
+  .logo {
+    width: 130px;
+    top: 16px;
+    left: 16px;
+  }
+
+  .splashMenu {
+    width: 95vw;
+    height: auto;
+    aspect-ratio: 700 / 590;
+    margin-bottom: 40px;
+    padding-bottom: calc(1.5rem + 60px);
+  }
+
+  .titleImage {
+    width: 200px;
+    height: 60px;
+  }
+
+  .white,
+  .black {
+    width: 200px;
+    height: 48px;
+  }
 }
