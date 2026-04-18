@@ -48,6 +48,7 @@ export default function Scene() {
   const [isThinking, setIsThinking] = useState(false);
   const [evalScore, setEvalScore] = useState(0);
   const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
+  const [currentTurn, setCurrentTurn] = useState<"w" | "b">("w");
   const [checkedColor, setCheckedColor] = useState<ColorChecked>(null);
   const [checkedSquares, setCheckedSquares] = useState<string[]>([]);
 
@@ -237,6 +238,7 @@ export default function Scene() {
 
     squareToNodeRef.current = next;
     setSquareToNode(next);
+    setCurrentTurn(chess.current.turn());
     return next;
   };
 
@@ -461,6 +463,8 @@ export default function Scene() {
               onPieceSelect={onPieceSelect}
               onPieceCancelSelection={onDeselect}
               selectedPiece={selectedNodeName}
+              playerColor={playerColor}
+              currentTurn={currentTurn}
             />
             <BoardHighlights
               legalMoves={legalMoves}

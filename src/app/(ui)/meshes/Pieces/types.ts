@@ -21,6 +21,7 @@ export interface ChessPieceProps extends Piece {
   type: PieceType;
   color: PieceColor;
   isSelected?: boolean;
+  isSelectable?: boolean;
   isCapture?: boolean;
   isDragging?: boolean;
   onSelect?: () => void;

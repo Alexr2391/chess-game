@@ -13,9 +13,12 @@ export const OPPONENT_ELO: Record<Opponent, string> = {
 };
 
 export const OPPONENT_QUOTE: Record<Opponent, string> = {
-  quintus: "Ah, finally a worthy challenger for a fine game… let us sit then, friend.",
-  livia: "Another plebeian nobody aiming at greatness… very well, amuse me.",
-  corvus: "A win without opposition is flavorless… fight me with all you can.",
+  quintus:
+    "Ah, finally a worthy challenger for a fine game… let us sit then, friend.",
+  livia:
+    "Another plebeian nobody seeking greatness, how unusual… very well, amuse me.",
+  corvus:
+    "A victory without opposition is flavorless… fight me with all you can muster'.",
 };
 
 export const OPPONENTS: {

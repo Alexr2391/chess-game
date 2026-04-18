@@ -10,6 +10,7 @@ export default function ChessPiece({
   scale,
   onSelect,
   isSelected,
+  isSelectable,
 }: ChessPieceProps) {
   const { animatedPosition, rotationX } = useSpring({
     animatedPosition: [
@@ -32,6 +33,12 @@ export default function ChessPiece({
       onPointerDown={(e) => {
         e.stopPropagation();
         onSelect?.();
+      }}
+      onPointerEnter={() => {
+        if (isSelectable) document.body.style.cursor = "grab";
+      }}
+      onPointerLeave={() => {
+        document.body.style.cursor = "default";
       }}
     />
   );

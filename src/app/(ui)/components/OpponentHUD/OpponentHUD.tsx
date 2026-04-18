@@ -1,9 +1,13 @@
 "use client";
 
-import Image from "next/image";
-import { Cinzel } from "next/font/google";
 import type { Opponent } from "@/types";
-import { OPPONENT_ELO, OPPONENT_QUOTE, OPPONENTS } from "../OpponentPicker/constants";
+import { Cinzel } from "next/font/google";
+import Image from "next/image";
+import {
+  OPPONENT_ELO,
+  OPPONENT_QUOTE,
+  OPPONENTS,
+} from "../OpponentPicker/constants";
 import css from "./OpponentHUD.module.scss";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
@@ -15,7 +19,7 @@ interface OpponentHUDProps {
 
 export function OpponentHUD({ opponent, playerColor }: OpponentHUDProps) {
   const data = OPPONENTS.find((o) => o.id === opponent)!;
-  const opponentColor = playerColor === "w" ? "Black" : "White";;
+  const opponentColor = playerColor === "w" ? "Black" : "White";
 
   return (
     <div className={css.hud}>
@@ -28,11 +32,13 @@ export function OpponentHUD({ opponent, playerColor }: OpponentHUDProps) {
           className={css.image}
         />
       </div>
-      <p className={css.quote}>"{OPPONENT_QUOTE[opponent]}"</p>
+      <p className={css.quote}>&quot;{OPPONENT_QUOTE[opponent]}&ldquo;</p>
       <div className={css.info}>
         <span className={`${css.label} ${cinzel.className}`}>Opponent</span>
         <span className={`${css.name} ${cinzel.className}`}>{data.name}</span>
-        <span className={`${css.elo} ${cinzel.className}`}>ELO {OPPONENT_ELO[opponent]}</span>
+        <span className={`${css.elo} ${cinzel.className}`}>
+          ELO {OPPONENT_ELO[opponent]}
+        </span>
         <div className={css.divider} />
         <span className={`${css.color} ${cinzel.className}`}>Plays</span>
         <div className={css.pieceWrap}>
