@@ -1,5 +1,6 @@
 "use client";
 
+import { BOARD_ROTATION_Z } from "@/utils/boardConstants";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -9,14 +10,19 @@ type Props = {
   onComplete: () => void;
 };
 
-const WHITE_TARGET = new THREE.Vector3(0, 1.5, 2);
-const BLACK_TARGET = new THREE.Vector3(0, 1.5, 2);
-const START_POS = new THREE.Vector3(0, 10, 16);
+const BEHIND_DISTANCE = 2 * Math.SQRT2;
+
+const dir = new THREE.Vector2(
+  Math.cos(BOARD_ROTATION_Z - Math.PI / 4),
+  Math.sin(BOARD_ROTATION_Z - Math.PI / 4),
+).multiplyScalar(BEHIND_DISTANCE);
+
+const TARGET = new THREE.Vector3(dir.x, dir.y, 0);
+const START_POS = new THREE.Vector3(0, 5, 14);
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
 
 export function CameraIntro({ playerColor, onComplete }: Props) {
   const { camera } = useThree();
-  const target = playerColor === "w" ? WHITE_TARGET : BLACK_TARGET;
   const done = useRef(false);
 
   useEffect(() => {
@@ -26,11 +32,11 @@ export function CameraIntro({ playerColor, onComplete }: Props) {
 
   useFrame(() => {
     if (done.current) return;
-    camera.position.lerp(target, 0.06);
+    camera.position.lerp(TARGET, 0.06);
     camera.lookAt(LOOK_AT);
 
-    if (camera.position.distanceTo(target) < 0.05) {
-      camera.position.copy(target);
+    if (camera.position.distanceTo(TARGET) < 0.05) {
+      camera.position.copy(TARGET);
       done.current = true;
       onComplete();
     }
