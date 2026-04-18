@@ -7,6 +7,7 @@ import type {
   ColorChecked,
   GameStatus,
 } from "@/types";
+import { BOARD_ROTATION_Z, worldToBoard } from "@/utils/boardConstants";
 import { positionToSquare } from "@/utils/positionToSquare";
 import {
   createStockfishWorker,
@@ -19,6 +20,7 @@ import { Chess, Move, Square } from "chess.js";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { BoardHighlights } from "../../meshes/BoardHighlights/BoardHighlights";
 import Pieces from "../../meshes/Pieces";
+import { Room } from "../../meshes/Room/Room";
 import ChessTable from "../../meshes/Table/Table";
 import Board from "../Board/Board";
 import { CameraIntro } from "../CameraIntro/CameraIntro";
@@ -255,11 +257,7 @@ export default function Scene() {
 
   const onDragMove = (position: [number, number, number]) => {
     const flip = playerColor === "b" ? -1 : 1;
-    const local: [number, number, number] = [
-      position[0] * flip,
-      -position[2] * flip,
-      0,
-    ];
+    const local = worldToBoard(position, flip);
     dragPositionRef.current = local;
     setDragPosition(local);
   };
@@ -313,8 +311,13 @@ export default function Scene() {
           onComplete={() => setIntroComplete(true)}
         />
         <Suspense fallback={<LoadingFallback />}>
+          <Room />
           <group
-            rotation={[-Math.PI / 2, 0, playerColor === "b" ? Math.PI : 0]}
+            rotation={[
+              -Math.PI / 2,
+              0,
+              (playerColor === "b" ? Math.PI : 0) + BOARD_ROTATION_Z,
+            ]}
           >
             <ChessTable />
             <Board />
@@ -331,7 +334,13 @@ export default function Scene() {
             <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
           </group>
         </Suspense>
-        <OrbitControls enabled={introComplete && !isDragging} />
+        <OrbitControls
+          enabled={introComplete && !isDragging}
+          minDistance={2}
+          maxDistance={10}
+          minPolarAngle={Math.PI / 6}
+          maxPolarAngle={Math.PI / 2.2}
+        />
       </Canvas>
     </>
   );
