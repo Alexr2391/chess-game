@@ -1,0 +1,59 @@
+@use "@/styles/index" as *;
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 2rem;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.modal {
+  background: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 1.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: all;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.message {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.6rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.primary {
+  background: #fff;
+  color: #000;
+}
+
+.secondary {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #444;
+}
