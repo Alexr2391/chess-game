@@ -19,6 +19,8 @@ type PiecesProps = {
   selectedPiece: string | null;
   capturedPieces: CapturedState;
   onPieceCancelSelection: () => void;
+  playerColor: "w" | "b";
+  currentTurn: "w" | "b";
 };
 
 export default function Pieces({
@@ -29,6 +31,8 @@ export default function Pieces({
   capturedPieces,
   onPieceSelect,
   onPieceCancelSelection,
+  playerColor,
+  currentTurn,
 }: PiecesProps) {
   const { nodes } = useGLTF("/models/chess/chess-optimized-board.glb");
 
@@ -115,6 +119,7 @@ export default function Pieces({
             scale={scale}
             onSelect={() => onPieceSelect(piece.nodeName)}
             isSelected={selectedPiece === piece.nodeName}
+            isSelectable={piece.color === (playerColor === "w" ? "white" : "black") && currentTurn === playerColor}
             onDeselect={onPieceCancelSelection}
           />
         );

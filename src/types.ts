@@ -17,3 +17,4 @@ export type GameStatus =
 export type ColorChecked = "black" | "white" | null;
 export type PromotionPiece = "q" | "r" | "b" | "n";
 export type PendingPromotion = { from: string; to: string };
+export type Opponent = "quintus" | "livia" | "corvus";

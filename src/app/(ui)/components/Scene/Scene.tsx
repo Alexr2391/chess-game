@@ -1,11 +1,15 @@
 "use client";
 import GlobalLight from "@/app/(ui)/lights/GlobalLight/GlobalLight";
-import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "@/app/(ui)/meshes/Pieces/constants";
+import {
+  PIECE_DEFINITIONS,
+  PROMO_DEFINITIONS,
+} from "@/app/(ui)/meshes/Pieces/constants";
 import type {
   CapturedPiece,
   CapturedState,
   ColorChecked,
   GameStatus,
+  Opponent,
   PendingPromotion,
   PromotionPiece,
 } from "@/types";
@@ -31,24 +35,33 @@ import { DragHandler } from "../DragHandler/DragHandler";
 import { EvalScore } from "../EvalScore/EvalScore";
 import { GameModal } from "../GameModal/GameModal";
 import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
+import { OpponentPicker } from "../OpponentPicker/OpponentPicker";
+import { OpponentHUD } from "../OpponentHUD/OpponentHUD";
+import { OPPONENT_DEPTH } from "../OpponentPicker/constants";
 import { PromotionModal } from "../PromotionModal/PromotionModal";
 import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
 
 export default function Scene() {
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [opponent, setOpponent] = useState<Opponent | null>(null);
   const [introComplete, setIntroComplete] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [evalScore, setEvalScore] = useState(0);
   const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
+  const [currentTurn, setCurrentTurn] = useState<"w" | "b">("w");
   const [checkedColor, setCheckedColor] = useState<ColorChecked>(null);
   const [checkedSquares, setCheckedSquares] = useState<string[]>([]);
 
   const buildSquareToNode = () =>
     Object.fromEntries(
-      PIECE_DEFINITIONS.filter((p) => p.square).map((p) => [p.square!, p.nodeName]),
+      PIECE_DEFINITIONS.filter((p) => p.square).map((p) => [
+        p.square!,
+        p.nodeName,
+      ]),
     );
   const squareToNodeRef = useRef<Record<string, string>>(buildSquareToNode());
-  const [squareToNode, setSquareToNode] = useState<Record<string, string>>(buildSquareToNode);
+  const [squareToNode, setSquareToNode] =
+    useState<Record<string, string>>(buildSquareToNode);
   console.log(squareToNode);
   const [capturedPieces, setCapturedPieces] = useState<CapturedState>({
     black: [],
@@ -63,9 +76,14 @@ export default function Scene() {
   const [pendingPromotion, setPendingPromotion] =
     useState<PendingPromotion | null>(null);
 
-  const computeCheckedSquares = (color: ColorChecked, currentSquareToNode: Record<string, string>): string[] => {
+  const computeCheckedSquares = (
+    color: ColorChecked,
+    currentSquareToNode: Record<string, string>,
+  ): string[] => {
     if (!color) return [];
-    const kingDef = PIECE_DEFINITIONS.find((p) => p.type === "king" && p.color === color);
+    const kingDef = PIECE_DEFINITIONS.find(
+      (p) => p.type === "king" && p.color === color,
+    );
     const kingSquare = Object.entries(currentSquareToNode).find(
       ([, nodeName]) => nodeName === kingDef?.nodeName,
     )?.[0];
@@ -77,7 +95,8 @@ export default function Scene() {
       const tempChess = new Chess(parts.join(" "));
       const attackerSquares = [
         ...new Set(
-          tempChess.moves({ verbose: true })
+          tempChess
+            .moves({ verbose: true })
             .filter((m) => m.to === kingSquare)
             .map((m) => m.from),
         ),
@@ -93,7 +112,7 @@ export default function Scene() {
     const isChecked = chess.current.isCheck();
     const squares = currentSquareToNode ?? squareToNode;
     if (chess.current.isCheckmate()) {
-      const color = activeColor === "b" ? "black" : "white" as ColorChecked;
+      const color = activeColor === "b" ? "black" : ("white" as ColorChecked);
       setGameStatus("checkmate");
       setCheckedColor(color);
       setCheckedSquares(computeCheckedSquares(color, squares));
@@ -102,7 +121,7 @@ export default function Scene() {
       setCheckedColor(null);
       setCheckedSquares([]);
     } else if (isChecked) {
-      const color = activeColor === "b" ? "black" : "white" as ColorChecked;
+      const color = activeColor === "b" ? "black" : ("white" as ColorChecked);
       setGameStatus("check");
       setCheckedColor(color);
       setCheckedSquares(computeCheckedSquares(color, squares));
@@ -150,7 +169,11 @@ export default function Scene() {
     });
   };
 
-  const applyMove = (from: Square, to: Square, promotion?: string): Record<string, string> => {
+  const applyMove = (
+    from: Square,
+    to: Square,
+    promotion?: string,
+  ): Record<string, string> => {
     const movement = chess.current.move({ from, to, promotion });
     let enPassantCapture: string | null = null;
 
@@ -173,20 +196,40 @@ export default function Scene() {
     delete next[from];
 
     if (movement.isKingsideCastle()) {
-      if (movement.color === "w") { next["f1"] = next["h1"]; delete next["h1"]; }
-      else                         { next["f8"] = next["h8"]; delete next["h8"]; }
+      if (movement.color === "w") {
+        next["f1"] = next["h1"];
+        delete next["h1"];
+      } else {
+        next["f8"] = next["h8"];
+        delete next["h8"];
+      }
     }
     if (movement.isQueensideCastle()) {
-      if (movement.color === "w") { next["d1"] = next["a1"]; delete next["a1"]; }
-      else                         { next["d8"] = next["a8"]; delete next["a8"]; }
+      if (movement.color === "w") {
+        next["d1"] = next["a1"];
+        delete next["a1"];
+      } else {
+        next["d8"] = next["a8"];
+        delete next["a8"];
+      }
     }
 
     if (promotion) {
-      const pieceColor = PIECE_DEFINITIONS.find((p) => p.nodeName === nodeName)?.color;
-      const typeMap: Record<string, string> = { q: "queen", r: "rook", b: "bishop", n: "knight" };
+      const pieceColor = PIECE_DEFINITIONS.find(
+        (p) => p.nodeName === nodeName,
+      )?.color;
+      const typeMap: Record<string, string> = {
+        q: "queen",
+        r: "rook",
+        b: "bishop",
+        n: "knight",
+      };
       const usedNames = new Set(Object.values(next));
       const slot = PROMO_DEFINITIONS.find(
-        (p) => p.type === typeMap[promotion] && p.color === pieceColor && !usedNames.has(p.nodeName),
+        (p) =>
+          p.type === typeMap[promotion] &&
+          p.color === pieceColor &&
+          !usedNames.has(p.nodeName),
       );
       next[to] = slot?.nodeName ?? nodeName;
     } else {
@@ -195,6 +238,7 @@ export default function Scene() {
 
     squareToNodeRef.current = next;
     setSquareToNode(next);
+    setCurrentTurn(chess.current.turn());
     return next;
   };
 
@@ -202,8 +246,12 @@ export default function Scene() {
     setIsThinking(true);
     const fen = chess.current.fen();
     console.log("current fen", chess.current.fen());
-    getBestMove(stockfishRef.current!, fen, 1, (score) =>
-      setEvalScore(playerColor === "w" ? -score : score), 0,
+    getBestMove(
+      stockfishRef.current!,
+      fen,
+      opponent ? OPPONENT_DEPTH[opponent] : 8,
+      (score) => setEvalScore(playerColor === "w" ? -score : score),
+      0,
     ).then((move) => {
       if (move === "(none)") {
         setIsThinking(false);
@@ -227,6 +275,7 @@ export default function Scene() {
     setSelectedNodeName(null);
     setCheckedColor(null);
     setPlayerColor(null);
+    setOpponent(null);
     setIntroComplete(false);
     setEvalScore(0);
     chess.current = new Chess();
@@ -353,7 +402,11 @@ export default function Scene() {
 
   const onPromotionSelect = (piece: PromotionPiece) => {
     if (!pendingPromotion) return;
-    const next = applyMove(pendingPromotion.from as Square, pendingPromotion.to as Square, piece);
+    const next = applyMove(
+      pendingPromotion.from as Square,
+      pendingPromotion.to as Square,
+      piece,
+    );
     updateGameStatus(next);
     getEval(evalWorkerRef.current!, chess.current.fen(), 8).then((score) => {
       setEvalScore(playerColor === "w" ? -score : score);
@@ -362,12 +415,17 @@ export default function Scene() {
     setPendingPromotion(null);
   };
   if (!playerColor) return <ColorPicker onSelect={setPlayerColor} />;
+  if (!opponent) return <OpponentPicker onSelect={setOpponent} />;
 
   return (
     <>
       {pendingPromotion && (
-        <PromotionModal playerColor={playerColor!} onSelect={onPromotionSelect} />
+        <PromotionModal
+          playerColor={playerColor!}
+          onSelect={onPromotionSelect}
+        />
       )}
+      {introComplete && <OpponentHUD opponent={opponent} playerColor={playerColor} />}
       {isThinking && <ThinkingOverlay />}
       <EvalScore score={evalScore} />
       <GameModal
@@ -405,8 +463,13 @@ export default function Scene() {
               onPieceSelect={onPieceSelect}
               onPieceCancelSelection={onDeselect}
               selectedPiece={selectedNodeName}
+              playerColor={playerColor}
+              currentTurn={currentTurn}
             />
-            <BoardHighlights legalMoves={legalMoves} checkedSquares={checkedSquares} />
+            <BoardHighlights
+              legalMoves={legalMoves}
+              checkedSquares={checkedSquares}
+            />
             <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
           </group>
         </Suspense>

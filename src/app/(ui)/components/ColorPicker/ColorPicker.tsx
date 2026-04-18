@@ -15,14 +15,14 @@ export function ColorPicker({ onSelect }: Props) {
         alt="Chesslords"
         width={200}
         height={133}
-        style={{ width: "200px", height: "auto" }}
+        style={{ width: "200px", height: "auto", minHeight: "1px" }}
         className={css.logo}
       />
       <div className={css.splashMenu}>
         <div className={css.titleImage} role="img" aria-label="Pick a side" />
         <div className={css.buttons}>
           <button className={`${css.btn} ${css.white}`} onClick={() => onSelect("w")}>
-            <Image src="/images/white.webp" alt="White" fill sizes="300px" className={css.btnImage} />
+            <Image src="/images/white.webp" alt="White" fill sizes="300px" loading="eager" className={css.btnImage} />
           </button>
           <button className={`${css.btn} ${css.black}`} onClick={() => onSelect("b")}>
             <Image src="/images/black.webp" alt="Black" fill sizes="300px" className={css.btnImage} />
