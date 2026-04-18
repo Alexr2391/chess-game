@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import css from "./ColorPicker.module.scss";
 
 type Props = {
@@ -9,14 +10,24 @@ type Props = {
 export function ColorPicker({ onSelect }: Props) {
   return (
     <div className={css.container}>
-      <h1 className={css.title}>Choose your side</h1>
-      <div className={css.buttons}>
-        <button className={`${css.btn} ${css.white}`} onClick={() => onSelect("w")}>
-          White
-        </button>
-        <button className={`${css.btn} ${css.black}`} onClick={() => onSelect("b")}>
-          Black
-        </button>
+      <Image
+        src="/images/chesslords.webp"
+        alt="Chesslords"
+        width={200}
+        height={133}
+        style={{ width: "200px", height: "auto" }}
+        className={css.logo}
+      />
+      <div className={css.splashMenu}>
+        <div className={css.titleImage} role="img" aria-label="Pick a side" />
+        <div className={css.buttons}>
+          <button className={`${css.btn} ${css.white}`} onClick={() => onSelect("w")}>
+            <Image src="/images/white.webp" alt="White" fill sizes="300px" className={css.btnImage} />
+          </button>
+          <button className={`${css.btn} ${css.black}`} onClick={() => onSelect("b")}>
+            <Image src="/images/black.webp" alt="Black" fill sizes="300px" className={css.btnImage} />
+          </button>
+        </div>
       </div>
     </div>
   );

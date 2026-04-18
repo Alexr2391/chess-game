@@ -1,13 +1,12 @@
-export const BOARD_SIZE = 2
-export const SQUARE_SIZE = BOARD_SIZE / 8
-export const BOARD_ORIGIN = -(BOARD_SIZE / 2)
-export const PIECE_FIT = 0.8
+export const BOARD_SIZE = 2;
+export const SQUARE_SIZE = BOARD_SIZE / 8;
+export const BOARD_ORIGIN = -(BOARD_SIZE / 2);
+export const PIECE_FIT = 0.8;
 
 export const BOARD_ROTATION_Z = Math.PI / 2;
 
-// Converts a world-space drag point into board-local XY coordinates.
-// cos/sin of -BOARD_ROTATION_Z "undoes" the board's Z rotation so the
-// drag position aligns with the board's own axes. flip mirrors for black.
+// cos/sin of -BOARD_ROTATION_Z undoes the board's Z rotation so drag coords
+// align with board-local axes. flip mirrors the result for black's perspective.
 export function worldToBoard(
   point: [number, number, number],
   flip: number,
