@@ -15,3 +15,5 @@ export type GameStatus =
   | "stalemate"
   | "draw";
 export type ColorChecked = "black" | "white" | null;
+export type PromotionPiece = "q" | "r" | "b" | "n";
+export type PendingPromotion = { from: string; to: string };

@@ -31,6 +31,7 @@ export type PieceDefinition = {
   nodeName: string;
   type: PieceType;
   color: PieceColor;
-  square: string;
+  square: string | null;
   scaleFactor: number;
+  glbNodeOverride?: string;
 };

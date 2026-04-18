@@ -1,11 +1,13 @@
 "use client";
 import GlobalLight from "@/app/(ui)/lights/GlobalLight/GlobalLight";
-import { PIECE_DEFINITIONS } from "@/app/(ui)/meshes/Pieces/constants";
+import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "@/app/(ui)/meshes/Pieces/constants";
 import type {
   CapturedPiece,
   CapturedState,
   ColorChecked,
   GameStatus,
+  PendingPromotion,
+  PromotionPiece,
 } from "@/types";
 import { BOARD_ROTATION_Z, worldToBoard } from "@/utils/boardConstants";
 import { positionToSquare } from "@/utils/positionToSquare";
@@ -29,6 +31,7 @@ import { DragHandler } from "../DragHandler/DragHandler";
 import { EvalScore } from "../EvalScore/EvalScore";
 import { GameModal } from "../GameModal/GameModal";
 import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
+import { PromotionModal } from "../PromotionModal/PromotionModal";
 import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
 
 export default function Scene() {
@@ -38,10 +41,14 @@ export default function Scene() {
   const [evalScore, setEvalScore] = useState(0);
   const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
   const [checkedColor, setCheckedColor] = useState<ColorChecked>(null);
+  const [checkedSquares, setCheckedSquares] = useState<string[]>([]);
 
-  const [squareToNode, setSquareToNode] = useState<Record<string, string>>(() =>
-    Object.fromEntries(PIECE_DEFINITIONS.map((p) => [p.square, p.nodeName])),
-  );
+  const buildSquareToNode = () =>
+    Object.fromEntries(
+      PIECE_DEFINITIONS.filter((p) => p.square).map((p) => [p.square!, p.nodeName]),
+    );
+  const squareToNodeRef = useRef<Record<string, string>>(buildSquareToNode());
+  const [squareToNode, setSquareToNode] = useState<Record<string, string>>(buildSquareToNode);
   console.log(squareToNode);
   const [capturedPieces, setCapturedPieces] = useState<CapturedState>({
     black: [],
@@ -53,21 +60,56 @@ export default function Scene() {
   const [dragPosition, setDragPosition] = useState<
     [number, number, number] | null
   >(null);
+  const [pendingPromotion, setPendingPromotion] =
+    useState<PendingPromotion | null>(null);
 
-  const updateGameStatus = () => {
+  const computeCheckedSquares = (color: ColorChecked, currentSquareToNode: Record<string, string>): string[] => {
+    if (!color) return [];
+    const kingDef = PIECE_DEFINITIONS.find((p) => p.type === "king" && p.color === color);
+    const kingSquare = Object.entries(currentSquareToNode).find(
+      ([, nodeName]) => nodeName === kingDef?.nodeName,
+    )?.[0];
+    if (!kingSquare) return [];
+    try {
+      const attackerColor = color === "white" ? "b" : "w";
+      const parts = chess.current.fen().split(" ");
+      parts[1] = attackerColor;
+      const tempChess = new Chess(parts.join(" "));
+      const attackerSquares = [
+        ...new Set(
+          tempChess.moves({ verbose: true })
+            .filter((m) => m.to === kingSquare)
+            .map((m) => m.from),
+        ),
+      ];
+      return [kingSquare, ...attackerSquares];
+    } catch {
+      return [kingSquare];
+    }
+  };
+
+  const updateGameStatus = (currentSquareToNode?: Record<string, string>) => {
     const activeColor = chess.current.turn();
     const isChecked = chess.current.isCheck();
+    const squares = currentSquareToNode ?? squareToNode;
     if (chess.current.isCheckmate()) {
+      const color = activeColor === "b" ? "black" : "white" as ColorChecked;
       setGameStatus("checkmate");
-      setCheckedColor(activeColor === "b" ? "black" : "white");
+      setCheckedColor(color);
+      setCheckedSquares(computeCheckedSquares(color, squares));
     } else if (chess.current.isDraw() || chess.current.isStalemate()) {
       setGameStatus("draw");
+      setCheckedColor(null);
+      setCheckedSquares([]);
     } else if (isChecked) {
+      const color = activeColor === "b" ? "black" : "white" as ColorChecked;
       setGameStatus("check");
-      setCheckedColor(activeColor === "b" ? "black" : "white");
+      setCheckedColor(color);
+      setCheckedSquares(computeCheckedSquares(color, squares));
     } else {
       setGameStatus("playing");
       setCheckedColor(null);
+      setCheckedSquares([]);
     }
   };
 
@@ -108,66 +150,70 @@ export default function Scene() {
     });
   };
 
-  const applyMove = (from: Square, to: Square) => {
-    const movement = chess.current.move({ from, to });
+  const applyMove = (from: Square, to: Square, promotion?: string): Record<string, string> => {
+    const movement = chess.current.move({ from, to, promotion });
     let enPassantCapture: string | null = null;
 
     if (movement.isEnPassant()) {
       enPassantCapture = `${movement.to[0]}${movement.from[1]}`;
     }
 
-    setSquareToNode((prev) => {
-      if (enPassantCapture && prev[enPassantCapture]) {
-        addToCapturedList(prev[enPassantCapture]);
-      }
-      if (movement.isCapture() && !movement.isEnPassant() && prev[to]) {
-        addToCapturedList(prev[to]);
-      }
+    const next = { ...squareToNodeRef.current };
+    const nodeName = next[from];
 
-      const next = { ...prev };
-      const nodeName = prev[from];
-      delete next[from];
-      if (enPassantCapture) delete next[enPassantCapture];
-      if (movement.isCapture() && !movement.isEnPassant()) delete next[to];
-      if (movement.isKingsideCastle()) {
-        //Hardcoded tile standard positions for Kingside/ Queenside rook
-        if (movement.color === "w") {
-          const r = prev["h1"];
-          delete next["h1"];
-          next["f1"] = r;
-        } else {
-          const r = prev["h8"];
-          delete next["h8"];
-          next["f8"] = r;
-        }
-      }
-      if (movement.isQueensideCastle()) {
-        if (movement.color === "w") {
-          const r = prev["a1"];
-          delete next["a1"];
-          next["d1"] = r;
-        } else {
-          const r = prev["a8"];
-          delete next["a8"];
-          next["d8"] = r;
-        }
-      }
+    if (enPassantCapture && next[enPassantCapture]) {
+      addToCapturedList(next[enPassantCapture]);
+      delete next[enPassantCapture];
+    }
+    if (movement.isCapture() && !movement.isEnPassant() && next[to]) {
+      addToCapturedList(next[to]);
+      delete next[to];
+    }
+
+    delete next[from];
+
+    if (movement.isKingsideCastle()) {
+      if (movement.color === "w") { next["f1"] = next["h1"]; delete next["h1"]; }
+      else                         { next["f8"] = next["h8"]; delete next["h8"]; }
+    }
+    if (movement.isQueensideCastle()) {
+      if (movement.color === "w") { next["d1"] = next["a1"]; delete next["a1"]; }
+      else                         { next["d8"] = next["a8"]; delete next["a8"]; }
+    }
+
+    if (promotion) {
+      const pieceColor = PIECE_DEFINITIONS.find((p) => p.nodeName === nodeName)?.color;
+      const typeMap: Record<string, string> = { q: "queen", r: "rook", b: "bishop", n: "knight" };
+      const usedNames = new Set(Object.values(next));
+      const slot = PROMO_DEFINITIONS.find(
+        (p) => p.type === typeMap[promotion] && p.color === pieceColor && !usedNames.has(p.nodeName),
+      );
+      next[to] = slot?.nodeName ?? nodeName;
+    } else {
       next[to] = nodeName;
-      return next;
-    });
+    }
+
+    squareToNodeRef.current = next;
+    setSquareToNode(next);
+    return next;
   };
 
   const triggerStockFish = () => {
     setIsThinking(true);
     const fen = chess.current.fen();
     console.log("current fen", chess.current.fen());
-    getBestMove(stockfishRef.current!, fen, 12, (score) =>
-      setEvalScore(playerColor === "w" ? -score : score),
+    getBestMove(stockfishRef.current!, fen, 1, (score) =>
+      setEvalScore(playerColor === "w" ? -score : score), 0,
     ).then((move) => {
+      if (move === "(none)") {
+        setIsThinking(false);
+        return;
+      }
       const from = move.slice(0, 2) as Square;
       const to = move.slice(2, 4) as Square;
-      applyMove(from, to);
-      updateGameStatus();
+      const promotion = move.length > 4 ? move[4] : undefined;
+      const next = applyMove(from, to, promotion);
+      updateGameStatus(next);
       setIsThinking(false);
     });
   };
@@ -175,9 +221,9 @@ export default function Scene() {
   const onPlayAgain = () => {
     setGameStatus("playing");
     setCapturedPieces({ black: [], white: [] });
-    setSquareToNode(
-      Object.fromEntries(PIECE_DEFINITIONS.map((p) => [p.square, p.nodeName])),
-    );
+    const fresh = buildSquareToNode();
+    squareToNodeRef.current = fresh;
+    setSquareToNode(fresh);
     setSelectedNodeName(null);
     setCheckedColor(null);
     setPlayerColor(null);
@@ -188,6 +234,7 @@ export default function Scene() {
     legalMovesRef.current = [];
 
     dragFromSquareRef.current = null;
+    setPendingPromotion(null);
   };
 
   useEffect(() => {
@@ -265,11 +312,27 @@ export default function Scene() {
     const pos = dragPositionRef.current;
     if (pos) {
       const toSquare = positionToSquare(pos);
-      const isLegal = legalMovesRef.current.some((m) => m.to === toSquare);
       const fromSquare = dragFromSquareRef.current;
+      const isPromotion = legalMovesRef.current.some(
+        (m) => m.to === toSquare && m.promotion,
+      );
+      const isLegal = legalMovesRef.current.some((m) => m.to === toSquare);
+
+      if (isPromotion && fromSquare) {
+        setPendingPromotion({ from: fromSquare, to: toSquare });
+        dragPositionRef.current = null;
+        legalMovesRef.current = [];
+        dragFromSquareRef.current = null;
+        setIsDragging(false);
+        setDragPosition(null);
+        setSelectedNodeName(null);
+        setLegalMoves([]);
+        return;
+      }
+
       if (isLegal && fromSquare) {
-        applyMove(fromSquare as Square, toSquare as Square);
-        updateGameStatus();
+        const next = applyMove(fromSquare as Square, toSquare as Square);
+        updateGameStatus(next);
         getEval(evalWorkerRef.current!, chess.current.fen(), 8).then(
           (score) => {
             setEvalScore(playerColor === "w" ? -score : score);
@@ -278,7 +341,6 @@ export default function Scene() {
         triggerStockFish();
       }
     }
-    updateGameStatus();
     dragPositionRef.current = null;
     legalMovesRef.current = [];
 
@@ -288,10 +350,24 @@ export default function Scene() {
     setSelectedNodeName(null);
     setLegalMoves([]);
   };
+
+  const onPromotionSelect = (piece: PromotionPiece) => {
+    if (!pendingPromotion) return;
+    const next = applyMove(pendingPromotion.from as Square, pendingPromotion.to as Square, piece);
+    updateGameStatus(next);
+    getEval(evalWorkerRef.current!, chess.current.fen(), 8).then((score) => {
+      setEvalScore(playerColor === "w" ? -score : score);
+    });
+    triggerStockFish();
+    setPendingPromotion(null);
+  };
   if (!playerColor) return <ColorPicker onSelect={setPlayerColor} />;
 
   return (
     <>
+      {pendingPromotion && (
+        <PromotionModal playerColor={playerColor!} onSelect={onPromotionSelect} />
+      )}
       {isThinking && <ThinkingOverlay />}
       <EvalScore score={evalScore} />
       <GameModal
@@ -330,7 +406,7 @@ export default function Scene() {
               onPieceCancelSelection={onDeselect}
               selectedPiece={selectedNodeName}
             />
-            <BoardHighlights legalMoves={legalMoves} />
+            <BoardHighlights legalMoves={legalMoves} checkedSquares={checkedSquares} />
             <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
           </group>
         </Suspense>

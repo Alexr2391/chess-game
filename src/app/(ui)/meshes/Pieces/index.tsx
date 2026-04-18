@@ -7,7 +7,9 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { CapturedChessPiece } from "./CapturedChessPiece/CapturedChessPiece";
 import ChessPiece from "./ChessPiece/ChessPiece";
-import { PIECE_DEFINITIONS } from "./constants";
+import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "./constants";
+
+const ALL_PIECE_DEFS = [...PIECE_DEFINITIONS, ...PROMO_DEFINITIONS];
 
 type PiecesProps = {
   dragPosition: [number, number, number] | null;
@@ -82,8 +84,9 @@ export default function Pieces({
           />
         );
       })}
-      {PIECE_DEFINITIONS.map((piece) => {
-        const mesh = nodes[piece.nodeName] as THREE.Mesh;
+      {ALL_PIECE_DEFS.map((piece) => {
+        const glbNodeName = piece.glbNodeOverride ?? piece.nodeName;
+        const mesh = nodes[glbNodeName] as THREE.Mesh;
         if (!mesh?.geometry) return null;
 
         const scale = baseScale * piece.scaleFactor;
