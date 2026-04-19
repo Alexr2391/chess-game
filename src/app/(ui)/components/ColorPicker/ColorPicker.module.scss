@@ -146,6 +146,13 @@
   transition: filter 0.2s ease;
 }
 
+.audioWrap {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.25rem;
+  z-index: 1;
+}
+
 @media (min-width: 1921px) {
   .container::before {
     left: calc(50% - 960px);
@@ -154,6 +161,10 @@
 
   .logo {
     left: calc(50% - 960px + 30px);
+  }
+
+  .audioWrap {
+    right: calc(50% - 960px + 1.25rem);
   }
 }
 

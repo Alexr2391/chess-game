@@ -8,6 +8,7 @@ import {
   OPPONENT_QUOTE,
   OPPONENTS,
 } from "../OpponentPicker/constants";
+import { AudioControls } from "../AudioControls/AudioControls";
 import css from "./OpponentHUD.module.scss";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
@@ -15,9 +16,12 @@ const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
 interface OpponentHUDProps {
   opponent: Opponent;
   playerColor: "w" | "b";
+  isAudioPlaying: boolean;
+  onAudioPlay: () => void;
+  onAudioPause: () => void;
 }
 
-export function OpponentHUD({ opponent, playerColor }: OpponentHUDProps) {
+export function OpponentHUD({ opponent, playerColor, isAudioPlaying, onAudioPlay, onAudioPause }: OpponentHUDProps) {
   const data = OPPONENTS.find((o) => o.id === opponent)!;
   const opponentColor = playerColor === "w" ? "Black" : "White";
 
@@ -57,6 +61,9 @@ export function OpponentHUD({ opponent, playerColor }: OpponentHUDProps) {
             className={`${css.piece} ${css.pieceRight}`}
           />
         </div>
+      </div>
+      <div className={css.audioSection}>
+        <AudioControls isPlaying={isAudioPlaying} onPlay={onAudioPlay} onPause={onAudioPause} />
       </div>
     </div>
   );
