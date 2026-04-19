@@ -12,6 +12,12 @@ export const OPPONENT_DEPTH: Record<Opponent, number> = {
   corvus: 10,
 };
 
+export const OPPONENT_SKILL: Record<Opponent, number> = {
+  quintus: 8,
+  livia: 10,
+  corvus: 12,
+};
+
 export const OPPONENT_ELO: Record<Opponent, string> = {
   quintus: "~1500",
   livia: "~1800",
@@ -20,7 +26,7 @@ export const OPPONENT_ELO: Record<Opponent, string> = {
 
 export const OPPONENT_QUOTE: Record<Opponent, string> = {
   quintus:
-    "Ah, finally a worthy challenger for a fine game… let us sit then, friend.",
+    "Ah, finally a worthy challenger for a fine game… let us play then, friend.",
   livia:
     "Another plebeian nobody seeking greatness, how unusual… very well, amuse me.",
   corvus:

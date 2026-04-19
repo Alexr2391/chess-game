@@ -1,6 +1,9 @@
 "use client";
 
-import { OPPONENT_DEPTH } from "@/app/(ui)/components/OpponentPicker/constants";
+import {
+  OPPONENT_DEPTH,
+  OPPONENT_SKILL,
+} from "@/app/(ui)/components/OpponentPicker/constants";
 import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "@/constants";
 import {
   COLOR,
@@ -244,7 +247,7 @@ export function useChessGame({
       fen,
       opponent ? OPPONENT_DEPTH[opponent] : 8,
       (score) => setEvalScore(playerColor === "w" ? -score : score),
-      0,
+      opponent ? OPPONENT_SKILL[opponent] : 10,
     ).then((move) => {
       if (move === "(none)") {
         setIsThinking(false);
