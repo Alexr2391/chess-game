@@ -113,6 +113,7 @@ export default function Scene() {
   if (!opponent)
     return (
       <OpponentPicker
+        onPlayVoiceLine={playVoiceLine}
         onSelect={setOpponent}
         onPending={fadeOutLobbyMusic}
         onLoaderStart={() => setGameLoaderVisible(true)}

@@ -8,6 +8,11 @@ export const SOUND_EFFECTS = {
     corvus: ["/audio/winning_1_corvus.mp3"],
     quintus: ["/audio/winning_1_quintus.mp3"],
   },
+  selection: {
+    livia: ["/audio/Livia_selection.mp3"],
+    corvus: ["/audio/Corvus_selection.mp3"],
+    quintus: ["/audio/Quintus_selection.mp3"],
+  },
 };
 
 export const PROMO_DEFINITIONS: PieceDefinition[] = [

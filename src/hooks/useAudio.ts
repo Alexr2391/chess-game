@@ -17,7 +17,7 @@ export function useAudio() {
     audioRef.current = audio;
 
     const start = () => {
-      if (sessionStorage.getItem("_audio_pref") !== "mused") {
+      if (sessionStorage.getItem("_audio_pref") !== "muted") {
         audio
           .play()
           .catch((err) => console.error("Lobby sound error: ", String(err)));
@@ -45,6 +45,7 @@ export function useAudio() {
   const playVoiceLine = (
     effect: keyof typeof SOUND_EFFECTS,
     opponent: Opponent | null,
+    cb?: (audio: HTMLAudioElement) => void,
   ) => {
     const pool = opponent ? SOUND_EFFECTS[effect]?.[opponent] : null;
 
@@ -64,14 +65,18 @@ export function useAudio() {
     audio.pause();
     audio.currentTime = 0;
 
+    audio.onended = null;
+
     audio.src = selectedAudio;
-    audio.load();
+
+    if (cb) {
+      cb(audio);
+    }
 
     audio.play().catch((err) => {
       console.error("Voice line error:", String(err));
     });
   };
-
   const producePieceSound = () => {
     if (!movePieceSoundRef.current) {
       const moveAudio = new Audio("/audio/piece_moving.wav");
@@ -137,12 +142,27 @@ export function useAudio() {
   };
 
   const resetToLobby = () => {
-    audioRef.current?.pause();
     const lobbyAudio = new Audio("/audio/lobby_roman.mp3");
     lobbyAudio.loop = true;
     lobbyAudio.volume = 0.6;
     audioRef.current = lobbyAudio;
-    setIsAudioPlaying(false);
+
+    const pref = sessionStorage.getItem("_audio_pref");
+    if (pref === "playing") {
+      lobbyAudio.play().catch(() => {});
+      setIsAudioPlaying(true);
+    } else if (!pref) {
+      const start = () => {
+        lobbyAudio.play().catch(() => {});
+        setIsAudioPlaying(true);
+        sessionStorage.setItem("_audio_pref", "playing");
+        document.removeEventListener("pointerdown", start);
+      };
+      document.addEventListener("pointerdown", start);
+      setIsAudioPlaying(false);
+    } else {
+      setIsAudioPlaying(false);
+    }
   };
 
   return {
