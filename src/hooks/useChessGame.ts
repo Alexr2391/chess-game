@@ -4,7 +4,11 @@ import {
   OPPONENT_DEPTH,
   OPPONENT_SKILL,
 } from "@/app/(ui)/components/OpponentPicker/constants";
-import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "@/constants";
+import {
+  PIECE_DEFINITIONS,
+  PROMO_DEFINITIONS,
+  type SOUND_EFFECTS,
+} from "@/constants";
 import {
   COLOR,
   GAMESTATUS,
@@ -33,9 +37,16 @@ const { CHECK, CHECKMATE, DRAW, PLAYING, STALEMATE } = GAMESTATUS;
 export function useChessGame({
   playerColor,
   opponent,
+  onPieceMove,
+  onPlayVoiceLine,
 }: {
   playerColor: "w" | "b" | null;
   opponent: Opponent | null;
+  onPieceMove: () => void;
+  onPlayVoiceLine: (
+    type: keyof typeof SOUND_EFFECTS,
+    character: Opponent | null,
+  ) => void;
 }) {
   const chess = useRef(new Chess());
   const squareToNodeRef = useRef<Record<string, string>>(buildSquareToNode());
@@ -124,6 +135,9 @@ export function useChessGame({
     const squares = currentSquareToNode ?? squareToNode;
     if (chess.current.isCheckmate()) {
       const color = activeColor === "b" ? BLACK : (WHITE as ColorChecked);
+      if (playerColor === activeColor) {
+        onPlayVoiceLine("winning", opponent);
+      }
       setGameStatus(CHECKMATE);
       setCheckedColor(color);
       setCheckedSquares(computeCheckedSquares(color, squares));
@@ -326,6 +340,7 @@ export function useChessGame({
             setEvalScore(playerColor === "w" ? -score : score);
           },
         );
+        onPieceMove();
         triggerStockFish();
       }
     }

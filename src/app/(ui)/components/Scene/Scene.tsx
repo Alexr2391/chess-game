@@ -40,10 +40,12 @@ export default function Scene() {
   const {
     isAudioPlaying,
     handlePlay,
-    handlePause,
+    handleMute,
     fadeOutLobbyMusic,
     switchToGameAudio,
     resetToLobby,
+    producePieceSound,
+    playVoiceLine,
   } = useAudio();
 
   const {
@@ -68,7 +70,12 @@ export default function Scene() {
     onDragEnd,
     onPromotionSelect,
     reset,
-  } = useChessGame({ playerColor, opponent });
+  } = useChessGame({
+    playerColor,
+    opponent,
+    onPieceMove: producePieceSound,
+    onPlayVoiceLine: playVoiceLine,
+  });
 
   useEffect(() => {
     if (!meshesLoaded) return;
@@ -99,7 +106,7 @@ export default function Scene() {
         onSelect={setPlayerColor}
         isAudioPlaying={isAudioPlaying}
         onAudioPlay={handlePlay}
-        onAudioPause={handlePause}
+        onAudioPause={handleMute}
       />
     );
 
@@ -111,7 +118,7 @@ export default function Scene() {
         onLoaderStart={() => setGameLoaderVisible(true)}
         isAudioPlaying={isAudioPlaying}
         onAudioPlay={handlePlay}
-        onAudioPause={handlePause}
+        onAudioPause={handleMute}
       />
     );
 
@@ -130,7 +137,7 @@ export default function Scene() {
           playerColor={playerColor}
           isAudioPlaying={isAudioPlaying}
           onAudioPlay={handlePlay}
-          onAudioPause={handlePause}
+          onAudioPause={handleMute}
         />
       )}
       {isThinking && <ThinkingOverlay />}

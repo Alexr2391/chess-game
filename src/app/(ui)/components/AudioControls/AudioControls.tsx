@@ -14,7 +14,7 @@ export function AudioControls({ isPlaying, onPlay, onPause }: AudioProps) {
     <div className={css.menu}>
       <span className={css.label}>
         Audio :{" "}
-        <span className={css.state}>{isPlaying ? "Playing" : "Paused"}</span>
+        <span className={css.state}>{isPlaying ? "Playing" : "Muted"}</span>
       </span>
       <div className={css.buttons}>
         <button className={css.btn} onClick={onPlay} aria-label="Play">

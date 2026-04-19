@@ -2,6 +2,14 @@ import { COLOR, type PieceDefinition } from "./types";
 
 const { BLACK, WHITE } = COLOR;
 
+export const SOUND_EFFECTS = {
+  winning: {
+    livia: ["/audio/winning_1_livia.mp3", "/audio/winning_2_livia.mp3"],
+    corvus: ["/audio/winning_1_corvus.mp3"],
+    quintus: ["/audio/winning_1_quintus.mp3"],
+  },
+};
+
 export const PROMO_DEFINITIONS: PieceDefinition[] = [
   {
     nodeName: "prom_w_q",
