@@ -13,12 +13,13 @@ const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
 interface OpponentPickerProps {
   onSelect: (opponent: Opponent) => void;
   onPending?: () => void;
+  onLoaderStart?: () => void;
   isAudioPlaying: boolean;
   onAudioPlay: () => void;
   onAudioPause: () => void;
 }
 
-export function OpponentPicker({ onSelect, onPending, isAudioPlaying, onAudioPlay, onAudioPause }: OpponentPickerProps) {
+export function OpponentPicker({ onSelect, onPending, onLoaderStart, isAudioPlaying, onAudioPlay, onAudioPause }: OpponentPickerProps) {
   const [pending, setPending] = useState<Opponent | null>(null);
 
   const handleClick = (id: Opponent) => {
@@ -27,7 +28,7 @@ export function OpponentPicker({ onSelect, onPending, isAudioPlaying, onAudioPla
     onPending?.();
     const audio = new Audio(OPPONENT_AUDIO[id]);
     audio.play().catch(() => {});
-    audio.onended = () => setTimeout(() => onSelect(id), 1000);
+    audio.onended = () => setTimeout(() => { onLoaderStart?.(); onSelect(id); }, 1000);
   };
 
   const getCardClass = (id: Opponent, index: number) => {

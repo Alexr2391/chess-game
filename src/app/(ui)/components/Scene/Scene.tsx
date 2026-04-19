@@ -40,6 +40,7 @@ import { OPPONENT_DEPTH } from "../OpponentPicker/constants";
 import { OpponentPicker } from "../OpponentPicker/OpponentPicker";
 import { PromotionModal } from "../PromotionModal/PromotionModal";
 import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
+import { GameLoader } from "../GameLoader/GameLoader";
 
 export default function Scene() {
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
@@ -52,6 +53,7 @@ export default function Scene() {
   const [checkedColor, setCheckedColor] = useState<ColorChecked>(null);
   const [checkedSquares, setCheckedSquares] = useState<string[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [gameLoaderVisible, setGameLoaderVisible] = useState(false);
 
   const buildSquareToNode = () =>
     Object.fromEntries(
@@ -275,6 +277,7 @@ export default function Scene() {
     lobbyAudio.volume = 0.6;
     audioRef.current = lobbyAudio;
     setIsAudioPlaying(false);
+    setGameLoaderVisible(false);
 
     setGameStatus("playing");
     setCapturedPieces({ black: [], white: [] });
@@ -338,11 +341,14 @@ export default function Scene() {
       queueMicrotask(() => setIsAudioPlaying(true));
     }
 
+    const loaderTimeout = setTimeout(() => setGameLoaderVisible(false), 800);
+
     if (chess.current.turn() !== playerColor) {
       triggerStockFish();
     }
 
     return () => {
+      clearTimeout(loaderTimeout);
       gameAudio.pause();
       gameAudio.src = "";
     };
@@ -502,17 +508,22 @@ export default function Scene() {
 
   if (!opponent)
     return (
-      <OpponentPicker
-        onSelect={setOpponent}
-        onPending={fadeOutLobbyMusic}
-        isAudioPlaying={isAudioPlaying}
-        onAudioPlay={handlePlay}
-        onAudioPause={handlePause}
-      />
+      <>
+        <OpponentPicker
+          onSelect={setOpponent}
+          onPending={fadeOutLobbyMusic}
+          onLoaderStart={() => setGameLoaderVisible(true)}
+          isAudioPlaying={isAudioPlaying}
+          onAudioPlay={handlePlay}
+          onAudioPause={handlePause}
+        />
+        {gameLoaderVisible && <GameLoader fading={false} opponent={null} />}
+      </>
     );
 
   return (
     <>
+      {gameLoaderVisible && <GameLoader fading={introComplete} opponent={opponent} />}
       {pendingPromotion && (
         <PromotionModal
           playerColor={playerColor!}
