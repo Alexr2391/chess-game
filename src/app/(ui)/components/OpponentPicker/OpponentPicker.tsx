@@ -1,12 +1,13 @@
 "use client";
 
+import type { SOUND_EFFECTS } from "@/constants";
 import type { Opponent } from "@/types";
 import { Cinzel } from "next/font/google";
 import Image from "next/image";
 import { useState } from "react";
 import { AudioControls } from "../AudioControls/AudioControls";
-import { OPPONENT_AUDIO, OPPONENTS } from "./constants";
 import css from "./OpponentPicker.module.scss";
+import { OPPONENTS } from "./constants";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
 
@@ -17,6 +18,11 @@ interface OpponentPickerProps {
   isAudioPlaying: boolean;
   onAudioPlay: () => void;
   onAudioPause: () => void;
+  onPlayVoiceLine: (
+    effect: keyof typeof SOUND_EFFECTS,
+    opponent: Opponent | null,
+    cb?: (audio: HTMLAudioElement) => void,
+  ) => void;
 }
 
 export function OpponentPicker({
@@ -26,6 +32,7 @@ export function OpponentPicker({
   isAudioPlaying,
   onAudioPlay,
   onAudioPause,
+  onPlayVoiceLine,
 }: OpponentPickerProps) {
   const [pending, setPending] = useState<Opponent | null>(null);
 
@@ -33,15 +40,14 @@ export function OpponentPicker({
     if (pending) return;
     setPending(id);
     onPending?.();
-    const audio = new Audio(OPPONENT_AUDIO[id]);
-    audio.play().catch((err) => {
-      console.error(String(err));
+
+    onPlayVoiceLine("selection", id, (audio) => {
+      audio.onended = () =>
+        setTimeout(() => {
+          onLoaderStart?.();
+          onSelect(id);
+        }, 1000);
     });
-    audio.onended = () =>
-      setTimeout(() => {
-        onLoaderStart?.();
-        onSelect(id);
-      }, 1000);
   };
 
   const getCardClass = (id: Opponent, index: number) => {

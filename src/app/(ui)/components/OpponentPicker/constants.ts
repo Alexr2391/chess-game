@@ -1,11 +1,5 @@
 import type { Opponent } from "@/types";
 
-export const OPPONENT_AUDIO: Record<Opponent, string> = {
-  quintus: "/audio/Quintus_selection.mp3",
-  livia: "/audio/Livia_selection.mp3",
-  corvus: "/audio/Corvus_selection.mp3",
-};
-
 export const OPPONENT_DEPTH: Record<Opponent, number> = {
   quintus: 6,
   livia: 8,

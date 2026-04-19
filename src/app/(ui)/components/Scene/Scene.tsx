@@ -36,14 +36,17 @@ export default function Scene() {
   const [introComplete, setIntroComplete] = useState(false);
   const [gameLoaderVisible, setGameLoaderVisible] = useState(false);
   const [meshesLoaded, setMeshesLoaded] = useState(false);
+  const [gameKey, setGameKey] = useState(0);
 
   const {
     isAudioPlaying,
     handlePlay,
-    handlePause,
+    handleMute,
     fadeOutLobbyMusic,
     switchToGameAudio,
     resetToLobby,
+    producePieceSound,
+    playVoiceLine,
   } = useAudio();
 
   const {
@@ -68,7 +71,12 @@ export default function Scene() {
     onDragEnd,
     onPromotionSelect,
     reset,
-  } = useChessGame({ playerColor, opponent });
+  } = useChessGame({
+    playerColor,
+    opponent,
+    onPieceMove: producePieceSound,
+    onPlayVoiceLine: playVoiceLine,
+  });
 
   useEffect(() => {
     if (!meshesLoaded) return;
@@ -83,7 +91,7 @@ export default function Scene() {
     return cleanup;
   }, [introComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onPlayAgain = () => {
+  const onReturnToLobby = () => {
     resetToLobby();
     reset();
     setGameLoaderVisible(false);
@@ -93,25 +101,34 @@ export default function Scene() {
     setOpponent(null);
   };
 
+  const onPlayAgain = () => {
+    reset();
+    setPlayerColor((prev) => (prev === "w" ? "b" : "w"));
+    setIntroComplete(false);
+    setMeshesLoaded(false);
+    setGameLoaderVisible(true);
+    setGameKey((k) => k + 1);
+  };
   if (!playerColor)
     return (
       <ColorPicker
         onSelect={setPlayerColor}
         isAudioPlaying={isAudioPlaying}
         onAudioPlay={handlePlay}
-        onAudioPause={handlePause}
+        onAudioPause={handleMute}
       />
     );
 
   if (!opponent)
     return (
       <OpponentPicker
+        onPlayVoiceLine={playVoiceLine}
         onSelect={setOpponent}
         onPending={fadeOutLobbyMusic}
         onLoaderStart={() => setGameLoaderVisible(true)}
         isAudioPlaying={isAudioPlaying}
         onAudioPlay={handlePlay}
-        onAudioPause={handlePause}
+        onAudioPause={handleMute}
       />
     );
 
@@ -130,7 +147,7 @@ export default function Scene() {
           playerColor={playerColor}
           isAudioPlaying={isAudioPlaying}
           onAudioPlay={handlePlay}
-          onAudioPause={handlePause}
+          onAudioPause={handleMute}
         />
       )}
       {isThinking && <ThinkingOverlay />}
@@ -138,7 +155,7 @@ export default function Scene() {
       <GameModal
         checkedColor={checkedColor}
         gameStatus={gameStatus}
-        onClose={() => null}
+        onClose={onReturnToLobby}
         onPlayAgain={onPlayAgain}
       />
       <div
@@ -183,7 +200,10 @@ export default function Scene() {
               />
               <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
             </group>
-            <SceneReadySignal onReady={() => setMeshesLoaded(true)} />
+            <SceneReadySignal
+              key={gameKey}
+              onReady={() => setMeshesLoaded(true)}
+            />
           </Suspense>
           <OrbitControls
             enabled={introComplete && !isDragging}
