@@ -9,13 +9,12 @@ import css from "./GameLoader.module.scss";
 const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
 
 interface GameLoaderProps {
-  fading: boolean;
   opponent: Opponent | null;
 }
 
-export function GameLoader({ fading, opponent }: GameLoaderProps) {
+export function GameLoader({ opponent }: GameLoaderProps) {
   return (
-    <div className={`${css.overlay}${fading ? ` ${css.fadeOut}` : ""}`}>
+    <div className={css.overlay}>
       {opponent && (
         <Image
           src={`/images/loading_screen_${opponent}.webp`}

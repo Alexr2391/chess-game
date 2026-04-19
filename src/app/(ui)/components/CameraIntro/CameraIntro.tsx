@@ -5,10 +5,11 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-type Props = {
+interface CameraProps {
   playerColor: "w" | "b";
+  ready: boolean;
   onComplete: () => void;
-};
+}
 
 const BEHIND_DISTANCE = 2 * Math.SQRT2;
 
@@ -21,7 +22,7 @@ const TARGET = new THREE.Vector3(dir.x, dir.y, 0);
 const START_POS = new THREE.Vector3(0, 5, 14);
 const LOOK_AT = new THREE.Vector3(0, 0, 0);
 
-export function CameraIntro({ playerColor, onComplete }: Props) {
+export function CameraIntro({ playerColor, ready, onComplete }: CameraProps) {
   const { camera } = useThree();
   const done = useRef(false);
 
@@ -31,7 +32,7 @@ export function CameraIntro({ playerColor, onComplete }: Props) {
   }, [playerColor, camera]);
 
   useFrame(() => {
-    if (done.current) return;
+    if (!ready || done.current) return;
     camera.position.lerp(TARGET, 0.06);
     camera.lookAt(LOOK_AT);
 

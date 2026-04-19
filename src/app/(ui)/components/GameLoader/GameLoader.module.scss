@@ -4,22 +4,11 @@
   }
 }
 
-@keyframes fadeOut {
+@keyframes scaleIn {
   from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
     transform: scale(1.06);
   }
   to {
-    opacity: 1;
     transform: scale(1);
   }
 }
@@ -27,7 +16,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 100000;
   will-change: transform;
   display: flex;
   flex-direction: column;
@@ -39,13 +28,9 @@
   overflow: hidden;
 }
 
-.fadeOut {
-  animation: fadeOut 0.8s ease-out forwards;
-}
-
 .splash {
   object-fit: contain;
-  animation: fadeIn 0.6s ease-out forwards;
+  animation: scaleIn 0.6s ease-out forwards;
 }
 
 .vignette {

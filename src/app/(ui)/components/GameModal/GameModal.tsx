@@ -1,25 +1,37 @@
 "use client";
 
-import type { ColorChecked, GameStatus } from "@/types";
+import { COLOR, GAMESTATUS, type ColorChecked, type GameStatus } from "@/types";
 import css from "./GameModal.module.scss";
 
-type Props = {
+interface GameModalProps {
   gameStatus: GameStatus;
   checkedColor: ColorChecked;
   onPlayAgain: () => void;
   onClose: () => void;
-};
+}
 
-export function GameModal({ gameStatus, checkedColor, onPlayAgain, onClose }: Props) {
-  if (gameStatus === "playing") return null;
+const { CHECK, CHECKMATE, DRAW, PLAYING, STALEMATE } = GAMESTATUS;
 
-  const isTerminal = gameStatus === "checkmate" || gameStatus === "draw" || gameStatus === "stalemate";
+export function GameModal({
+  gameStatus,
+  checkedColor,
+  onPlayAgain,
+  onClose,
+}: GameModalProps) {
+  if (gameStatus === PLAYING) return null;
+
+  const isTerminal =
+    gameStatus === CHECKMATE || gameStatus === DRAW || gameStatus === STALEMATE;
+
+  const { WHITE } = COLOR;
 
   const message = () => {
-    if (gameStatus === "check") return `${checkedColor === "white" ? "White" : "Black"} is in check!`;
-    if (gameStatus === "checkmate") return `${checkedColor === "white" ? "White" : "Black"} is checkmated. ${checkedColor === "white" ? "Black" : "White"} wins!`;
-    if (gameStatus === "stalemate") return "Stalemate — it's a draw!";
-    if (gameStatus === "draw") return "Draw!";
+    if (gameStatus === CHECK)
+      return `${checkedColor === WHITE ? "White" : "Black"} is in check!`;
+    if (gameStatus === CHECKMATE)
+      return `${checkedColor === WHITE ? "White" : "Black"} is checkmated. ${checkedColor === WHITE ? "Black" : "White"} wins!`;
+    if (gameStatus === STALEMATE) return "Stalemate — it's a draw!";
+    if (gameStatus === DRAW) return "Draw!";
     return null;
   };
 
@@ -29,7 +41,10 @@ export function GameModal({ gameStatus, checkedColor, onPlayAgain, onClose }: Pr
         <p className={css.message}>{message()}</p>
         {isTerminal && (
           <div className={css.buttons}>
-            <button className={`${css.btn} ${css.primary}`} onClick={onPlayAgain}>
+            <button
+              className={`${css.btn} ${css.primary}`}
+              onClick={onPlayAgain}
+            >
               Play Again
             </button>
             <button className={`${css.btn} ${css.secondary}`} onClick={onClose}>

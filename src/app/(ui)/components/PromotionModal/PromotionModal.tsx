@@ -1,16 +1,16 @@
 "use client";
 
 import type { PromotionPiece } from "@/types";
-import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import css from "./PromotionModal.module.scss";
 
-type Props = {
+interface PromotionalModalProps {
   playerColor: "w" | "b";
   onSelect: (piece: PromotionPiece) => void;
-};
+}
 
 const GLB_NODE: Record<"w" | "b", Record<PromotionPiece, string>> = {
   w: {
@@ -60,16 +60,26 @@ function RotatingPiece({ nodeName }: { nodeName: string }) {
 
 const PIECES: PromotionPiece[] = ["q", "r", "b", "n"];
 
-export function PromotionModal({ playerColor, onSelect }: Props) {
+export function PromotionModal({
+  playerColor,
+  onSelect,
+}: PromotionalModalProps) {
   return (
     <div className={css.overlay}>
       <div className={css.modal}>
         <h3 className={css.title}>Promote Pawn</h3>
         <div className={css.cards}>
           {PIECES.map((piece) => (
-            <button key={piece} className={css.card} onClick={() => onSelect(piece)}>
+            <button
+              key={piece}
+              className={css.card}
+              onClick={() => onSelect(piece)}
+            >
               <div className={css.canvasWrap}>
-                <Canvas camera={{ position: [0, 0.1, 0.7], fov: 45 }} gl={{ antialias: true }}>
+                <Canvas
+                  camera={{ position: [0, 0.1, 0.7], fov: 45 }}
+                  gl={{ antialias: true }}
+                >
                   <ambientLight intensity={0.5} />
                   <directionalLight position={[2, 3, 5]} intensity={1.2} />
                   <RotatingPiece nodeName={GLB_NODE[playerColor][piece]} />

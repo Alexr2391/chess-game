@@ -1,11 +1,11 @@
 "use client";
 
 import type { Opponent } from "@/types";
-import Image from "next/image";
 import { Cinzel } from "next/font/google";
+import Image from "next/image";
 import { useState } from "react";
-import { OPPONENT_AUDIO, OPPONENTS } from "./constants";
 import { AudioControls } from "../AudioControls/AudioControls";
+import { OPPONENT_AUDIO, OPPONENTS } from "./constants";
 import css from "./OpponentPicker.module.scss";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
@@ -19,7 +19,14 @@ interface OpponentPickerProps {
   onAudioPause: () => void;
 }
 
-export function OpponentPicker({ onSelect, onPending, onLoaderStart, isAudioPlaying, onAudioPlay, onAudioPause }: OpponentPickerProps) {
+export function OpponentPicker({
+  onSelect,
+  onPending,
+  onLoaderStart,
+  isAudioPlaying,
+  onAudioPlay,
+  onAudioPause,
+}: OpponentPickerProps) {
   const [pending, setPending] = useState<Opponent | null>(null);
 
   const handleClick = (id: Opponent) => {
@@ -27,8 +34,14 @@ export function OpponentPicker({ onSelect, onPending, onLoaderStart, isAudioPlay
     setPending(id);
     onPending?.();
     const audio = new Audio(OPPONENT_AUDIO[id]);
-    audio.play().catch(() => {});
-    audio.onended = () => setTimeout(() => { onLoaderStart?.(); onSelect(id); }, 1000);
+    audio.play().catch((err) => {
+      console.error(String(err));
+    });
+    audio.onended = () =>
+      setTimeout(() => {
+        onLoaderStart?.();
+        onSelect(id);
+      }, 1000);
   };
 
   const getCardClass = (id: Opponent, index: number) => {
@@ -43,32 +56,44 @@ export function OpponentPicker({ onSelect, onPending, onLoaderStart, isAudioPlay
   return (
     <div className={css.overlay}>
       <div className={css.container}>
-        <div className={css.title} role="img" aria-label="Choose your opponent" />
+        <div
+          className={css.title}
+          role="img"
+          aria-label="Choose your opponent"
+        />
         <div className={css.cards}>
-          {OPPONENTS.map((o, i) => (
+          {OPPONENTS.map((opp, i) => (
             <button
-              key={o.id}
-              className={getCardClass(o.id, i)}
-              onClick={() => handleClick(o.id)}
+              key={opp.id}
+              className={getCardClass(opp.id, i)}
+              onClick={() => handleClick(opp.id)}
             >
               <div className={css.imageWrap}>
                 <Image
-                  src={`/images/${o.id}.webp`}
-                  alt={o.name}
+                  src={`/images/${opp.id}.webp`}
+                  alt={opp.name}
                   fill
                   sizes="220px"
                   className={css.portrait}
                 />
               </div>
-              <span className={`${css.name} ${cinzel.className}`}>{o.name}</span>
-              <p className={css.bio}>{o.bio}</p>
-              <span className={css.difficulty}>Difficulty: {o.difficulty}</span>
+              <span className={`${css.name} ${cinzel.className}`}>
+                {opp.name}
+              </span>
+              <p className={css.bio}>{opp.bio}</p>
+              <span className={css.difficulty}>
+                Difficulty: {opp.difficulty}
+              </span>
             </button>
           ))}
         </div>
       </div>
       <div className={css.audioWrap}>
-        <AudioControls isPlaying={isAudioPlaying} onPlay={onAudioPlay} onPause={onAudioPause} />
+        <AudioControls
+          isPlaying={isAudioPlaying}
+          onPlay={onAudioPlay}
+          onPause={onAudioPause}
+        />
       </div>
     </div>
   );
