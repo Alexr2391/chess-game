@@ -35,9 +35,9 @@ import { DragHandler } from "../DragHandler/DragHandler";
 import { EvalScore } from "../EvalScore/EvalScore";
 import { GameModal } from "../GameModal/GameModal";
 import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
-import { OpponentPicker } from "../OpponentPicker/OpponentPicker";
 import { OpponentHUD } from "../OpponentHUD/OpponentHUD";
 import { OPPONENT_DEPTH } from "../OpponentPicker/constants";
+import { OpponentPicker } from "../OpponentPicker/OpponentPicker";
 import { PromotionModal } from "../PromotionModal/PromotionModal";
 import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
 
@@ -51,6 +51,7 @@ export default function Scene() {
   const [currentTurn, setCurrentTurn] = useState<"w" | "b">("w");
   const [checkedColor, setCheckedColor] = useState<ColorChecked>(null);
   const [checkedSquares, setCheckedSquares] = useState<string[]>([]);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   const buildSquareToNode = () =>
     Object.fromEntries(
@@ -138,6 +139,7 @@ export default function Scene() {
   const dragFromSquareRef = useRef<string | null>(null);
   const stockfishRef = useRef<Worker | null>(null);
   const evalWorkerRef = useRef<Worker | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const addToCapturedList = (nodeName: string) => {
     const capturedPiece = PIECE_DEFINITIONS.find(
@@ -267,6 +269,13 @@ export default function Scene() {
   };
 
   const onPlayAgain = () => {
+    audioRef.current?.pause();
+    const lobbyAudio = new Audio("/audio/lobby_roman.mp3");
+    lobbyAudio.loop = true;
+    lobbyAudio.volume = 0.6;
+    audioRef.current = lobbyAudio;
+    setIsAudioPlaying(false);
+
     setGameStatus("playing");
     setCapturedPieces({ black: [], white: [] });
     const fresh = buildSquareToNode();
@@ -281,10 +290,31 @@ export default function Scene() {
     chess.current = new Chess();
     dragPositionRef.current = null;
     legalMovesRef.current = [];
-
     dragFromSquareRef.current = null;
     setPendingPromotion(null);
   };
+
+  useEffect(() => {
+    const audio = new Audio("/audio/lobby_roman.mp3");
+    audio.loop = true;
+    audio.volume = 0.6;
+    audioRef.current = audio;
+
+    const start = () => {
+      if (sessionStorage.getItem("_audio_pref") !== "paused") {
+        audio.play().catch((err) => console.error(String(err)));
+        setIsAudioPlaying(true);
+        sessionStorage.setItem("_audio_pref", "playing");
+      }
+      document.removeEventListener("pointerdown", start);
+    };
+    document.addEventListener("pointerdown", start);
+
+    return () => {
+      document.removeEventListener("pointerdown", start);
+      audio.pause();
+    };
+  }, []);
 
   useEffect(() => {
     stockfishRef.current = createStockfishWorker();
@@ -297,9 +327,25 @@ export default function Scene() {
 
   useEffect(() => {
     if (!introComplete || !playerColor) return;
+
+    const gameAudio = new Audio("/audio/game_lounge_roman.mp3");
+    gameAudio.loop = true;
+    gameAudio.volume = 0.6;
+    audioRef.current = gameAudio;
+
+    if (sessionStorage.getItem("_audio_pref") !== "paused") {
+      gameAudio.play().catch(() => {});
+      queueMicrotask(() => setIsAudioPlaying(true));
+    }
+
     if (chess.current.turn() !== playerColor) {
       triggerStockFish();
     }
+
+    return () => {
+      gameAudio.pause();
+      gameAudio.src = "";
+    };
   }, [introComplete]);
 
   useEffect(() => {
@@ -414,8 +460,56 @@ export default function Scene() {
     triggerStockFish();
     setPendingPromotion(null);
   };
-  if (!playerColor) return <ColorPicker onSelect={setPlayerColor} />;
-  if (!opponent) return <OpponentPicker onSelect={setOpponent} />;
+  const fadeOutLobbyMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const fade = setInterval(() => {
+      if (audio.volume > 0.05) {
+        audio.volume = Math.max(0, audio.volume - 0.05);
+      } else {
+        audio.pause();
+        setIsAudioPlaying(false);
+        clearInterval(fade);
+      }
+    }, 80);
+  };
+
+  const handlePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.play().catch(() => {});
+    setIsAudioPlaying(true);
+    sessionStorage.setItem("_audio_pref", "playing");
+  };
+
+  const handlePause = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    setIsAudioPlaying(false);
+    sessionStorage.setItem("_audio_pref", "paused");
+  };
+
+  if (!playerColor)
+    return (
+      <ColorPicker
+        onSelect={setPlayerColor}
+        isAudioPlaying={isAudioPlaying}
+        onAudioPlay={handlePlay}
+        onAudioPause={handlePause}
+      />
+    );
+
+  if (!opponent)
+    return (
+      <OpponentPicker
+        onSelect={setOpponent}
+        onPending={fadeOutLobbyMusic}
+        isAudioPlaying={isAudioPlaying}
+        onAudioPlay={handlePlay}
+        onAudioPause={handlePause}
+      />
+    );
 
   return (
     <>
@@ -425,7 +519,15 @@ export default function Scene() {
           onSelect={onPromotionSelect}
         />
       )}
-      {introComplete && <OpponentHUD opponent={opponent} playerColor={playerColor} />}
+      {introComplete && (
+        <OpponentHUD
+          opponent={opponent}
+          playerColor={playerColor}
+          isAudioPlaying={isAudioPlaying}
+          onAudioPlay={handlePlay}
+          onAudioPause={handlePause}
+        />
+      )}
       {isThinking && <ThinkingOverlay />}
       <EvalScore score={evalScore} />
       <GameModal

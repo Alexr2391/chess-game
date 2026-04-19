@@ -1,13 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import { AudioControls } from "../AudioControls/AudioControls";
 import css from "./ColorPicker.module.scss";
 
 type Props = {
   onSelect: (color: "w" | "b") => void;
+  isAudioPlaying: boolean;
+  onAudioPlay: () => void;
+  onAudioPause: () => void;
 };
 
-export function ColorPicker({ onSelect }: Props) {
+export function ColorPicker({ onSelect, isAudioPlaying, onAudioPlay, onAudioPause }: Props) {
   return (
     <div className={css.container}>
       <Image
@@ -28,6 +32,9 @@ export function ColorPicker({ onSelect }: Props) {
             <Image src="/images/black.webp" alt="Black" fill sizes="300px" className={css.btnImage} />
           </button>
         </div>
+      </div>
+      <div className={css.audioWrap}>
+        <AudioControls isPlaying={isAudioPlaying} onPlay={onAudioPlay} onPause={onAudioPause} />
       </div>
     </div>
   );

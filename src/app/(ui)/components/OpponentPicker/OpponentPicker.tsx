@@ -4,21 +4,30 @@ import type { Opponent } from "@/types";
 import Image from "next/image";
 import { Cinzel } from "next/font/google";
 import { useState } from "react";
-import { OPPONENTS } from "./constants";
+import { OPPONENT_AUDIO, OPPONENTS } from "./constants";
+import { AudioControls } from "../AudioControls/AudioControls";
 import css from "./OpponentPicker.module.scss";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: "700" });
 
 interface OpponentPickerProps {
   onSelect: (opponent: Opponent) => void;
+  onPending?: () => void;
+  isAudioPlaying: boolean;
+  onAudioPlay: () => void;
+  onAudioPause: () => void;
 }
 
-export function OpponentPicker({ onSelect }: OpponentPickerProps) {
+export function OpponentPicker({ onSelect, onPending, isAudioPlaying, onAudioPlay, onAudioPause }: OpponentPickerProps) {
   const [pending, setPending] = useState<Opponent | null>(null);
 
   const handleClick = (id: Opponent) => {
     if (pending) return;
     setPending(id);
+    onPending?.();
+    const audio = new Audio(OPPONENT_AUDIO[id]);
+    audio.play().catch(() => {});
+    audio.onended = () => setTimeout(() => onSelect(id), 1000);
   };
 
   const getCardClass = (id: Opponent, index: number) => {
@@ -40,7 +49,6 @@ export function OpponentPicker({ onSelect }: OpponentPickerProps) {
               key={o.id}
               className={getCardClass(o.id, i)}
               onClick={() => handleClick(o.id)}
-              onAnimationEnd={o.id === pending ? () => onSelect(o.id) : undefined}
             >
               <div className={css.imageWrap}>
                 <Image
@@ -57,6 +65,9 @@ export function OpponentPicker({ onSelect }: OpponentPickerProps) {
             </button>
           ))}
         </div>
+      </div>
+      <div className={css.audioWrap}>
+        <AudioControls isPlaying={isAudioPlaying} onPlay={onAudioPlay} onPause={onAudioPause} />
       </div>
     </div>
   );
