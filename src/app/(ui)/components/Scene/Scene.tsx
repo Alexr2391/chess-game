@@ -1,8 +1,8 @@
 "use client";
 import GlobalLight from "@/app/(ui)/lights/GlobalLight/GlobalLight";
-import { useSceneReady } from "@/hooks/useSceneReady";
 import { useAudio } from "@/hooks/useAudio";
 import { useChessGame } from "@/hooks/useChessGame";
+import { useSceneReady } from "@/hooks/useSceneReady";
 import type { Opponent } from "@/types";
 import { BOARD_ROTATION_Z } from "@/utils/boardConstants";
 import { Environment, OrbitControls } from "@react-three/drei";
@@ -19,11 +19,11 @@ import { DragHandler } from "../DragHandler/DragHandler";
 import { EvalScore } from "../EvalScore/EvalScore";
 import { GameLoader } from "../GameLoader/GameLoader";
 import { GameModal } from "../GameModal/GameModal";
-import { LoadingFallback } from "../LoadingFallback/LoadingFallback";
 import { OpponentHUD } from "../OpponentHUD/OpponentHUD";
 import { OpponentPicker } from "../OpponentPicker/OpponentPicker";
 import { PromotionModal } from "../PromotionModal/PromotionModal";
 import { ThinkingOverlay } from "../ThinkingOverlay/ThinkingOverlay";
+import css from "./Scene.module.scss";
 
 function SceneReadySignal({ onReady }: { onReady: () => void }) {
   useSceneReady(onReady);
@@ -119,7 +119,10 @@ export default function Scene() {
     <>
       {gameLoaderVisible && <GameLoader opponent={opponent} />}
       {pendingPromotion && (
-        <PromotionModal playerColor={playerColor!} onSelect={onPromotionSelect} />
+        <PromotionModal
+          playerColor={playerColor!}
+          onSelect={onPromotionSelect}
+        />
       )}
       {introComplete && (
         <OpponentHUD
@@ -138,12 +141,13 @@ export default function Scene() {
         onClose={() => null}
         onPlayAgain={onPlayAgain}
       />
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, opacity: gameLoaderVisible ? 0 : 1 }}>
-        <Canvas
-          style={{ height: "100dvh", width: "100dvw", background: "#0a0a0a" }}
-          gl={{ alpha: false }}
-          onPointerUp={() => onDragEnd()}
-        >
+      <div
+        className={css.sceneWrapper}
+        style={{
+          opacity: gameLoaderVisible ? 0 : 1,
+        }}
+      >
+        <Canvas className={css.canvas} onPointerUp={() => onDragEnd()}>
           <GlobalLight />
           <Environment preset="studio" environmentIntensity={0.4} />
           <CameraIntro
@@ -151,7 +155,7 @@ export default function Scene() {
             ready={!gameLoaderVisible}
             onComplete={() => setIntroComplete(true)}
           />
-          <Suspense fallback={<LoadingFallback />}>
+          <Suspense fallback={null}>
             <Room />
             <group
               rotation={[
@@ -173,7 +177,10 @@ export default function Scene() {
                 playerColor={playerColor}
                 currentTurn={currentTurn}
               />
-              <BoardHighlights legalMoves={legalMoves} checkedSquares={checkedSquares} />
+              <BoardHighlights
+                legalMoves={legalMoves}
+                checkedSquares={checkedSquares}
+              />
               <DragHandler onDragMove={onDragMove} isDragging={isDragging} />
             </group>
             <SceneReadySignal onReady={() => setMeshesLoaded(true)} />
