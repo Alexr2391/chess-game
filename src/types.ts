@@ -18,3 +18,34 @@ export type ColorChecked = "black" | "white" | null;
 export type PromotionPiece = "q" | "r" | "b" | "n";
 export type PendingPromotion = { from: string; to: string };
 export type Opponent = "quintus" | "livia" | "corvus";
+
+export type PieceType =
+  | "pawn"
+  | "rook"
+  | "knight"
+  | "bishop"
+  | "queen"
+  | "king";
+export type PieceColor = "white" | "black";
+
+export type PieceDefinition = {
+  nodeName: string;
+  type: PieceType;
+  color: PieceColor;
+  square: string | null;
+  scaleFactor: number;
+  glbNodeOverride?: string;
+};
+
+export enum COLOR {
+  BLACK = "black",
+  WHITE = "white",
+}
+
+export enum GAMESTATUS {
+  PLAYING = "playing",
+  CHECK = "check",
+  CHECKMATE = "checkmate",
+  STALEMATE = "stalemate",
+  DRAW = "draw",
+}

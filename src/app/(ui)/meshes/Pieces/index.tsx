@@ -1,5 +1,6 @@
 "use client";
 
+import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "@/constants";
 import type { CapturedState } from "@/types";
 import { PIECE_FIT, SQUARE_SIZE } from "@/utils/boardConstants";
 import { calculatePiecePos } from "@/utils/calculatePiecePos";
@@ -7,7 +8,6 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { CapturedChessPiece } from "./CapturedChessPiece/CapturedChessPiece";
 import ChessPiece from "./ChessPiece/ChessPiece";
-import { PIECE_DEFINITIONS, PROMO_DEFINITIONS } from "./constants";
 
 const ALL_PIECE_DEFS = [...PIECE_DEFINITIONS, ...PROMO_DEFINITIONS];
 
@@ -119,7 +119,10 @@ export default function Pieces({
             scale={scale}
             onSelect={() => onPieceSelect(piece.nodeName)}
             isSelected={selectedPiece === piece.nodeName}
-            isSelectable={piece.color === (playerColor === "w" ? "white" : "black") && currentTurn === playerColor}
+            isSelectable={
+              piece.color === (playerColor === "w" ? "white" : "black") &&
+              currentTurn === playerColor
+            }
             onDeselect={onPieceCancelSelection}
           />
         );

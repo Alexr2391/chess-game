@@ -27,12 +27,3 @@ export interface ChessPieceProps extends Piece {
   onSelect?: () => void;
   onDeselect?: () => void;
 }
-
-export type PieceDefinition = {
-  nodeName: string;
-  type: PieceType;
-  color: PieceColor;
-  square: string | null;
-  scaleFactor: number;
-  glbNodeOverride?: string;
-};
