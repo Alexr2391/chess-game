@@ -1,6 +1,8 @@
 # 3D Chess
 
-A 3D chess game built in the browser. Play against an AI opponent powered by Stockfish.
+A browser-based 3D chess application demonstrating real-time game state management, AI integration, and interactive 3D UI rendering.
+Built to explore complex frontend architecture combining physics-like rendering, deterministic game logic, and external AI engine integration (stockfish).
+
 
 ## What it does
 
